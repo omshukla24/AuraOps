@@ -80,11 +80,11 @@ export default function PipelineNode({
         return (
           <group key={b.id}>
             <mesh position={off} onClick={(e) => { e.stopPropagation(); onToggleBubble(b.id); }} onPointerOver={() => { document.body.style.cursor = 'pointer'; }} onPointerOut={() => { document.body.style.cursor = 'auto'; }}>
-              <sphereGeometry args={[isExp ? 0.12 : 0.07, 20, 20]} />
+              <sphereGeometry args={[isExp ? 0.6 : 0.2, 32, 32]} />
               <meshStandardMaterial color={color} emissive={color} emissiveIntensity={isExp ? 1.5 : 0.4} roughness={0.2} metalness={0.7} />
             </mesh>
             {isExp && (
-              <Html position={[off[0], off[1] + 0.35, off[2]]} center distanceFactor={15} style={{ pointerEvents: 'none' }}>
+              <Html position={[off[0], off[1] + 1.2, off[2]]} center distanceFactor={15} style={{ pointerEvents: 'none' }}>
                 <div style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', boxShadow: '0 0 20px rgba(0,255,255,0.08)', padding: '8px 14px', fontFamily: "'Inter',sans-serif", minWidth: '120px', whiteSpace: 'nowrap' }}>
                   <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '8px', letterSpacing: '1px', textTransform: 'uppercase' }}>{b.label}</div>
                   <div style={{ color, fontSize: '13px', fontWeight: 700, marginTop: '2px' }}>{b.value}</div>

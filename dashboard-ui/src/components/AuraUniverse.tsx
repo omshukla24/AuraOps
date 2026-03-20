@@ -24,30 +24,30 @@ interface NodeDef {
 const NODES: NodeDef[] = [
   { id: 'trigger', label: 'GitLab MR Opened', sublabel: 'Webhook received', pos: [-15, 0, 0], color: '#ffffff', revealAt: -1, isTrigger: true, branches: [] },
   { id: 'security', label: 'SecurityAgent', sublabel: 'Claude Sonnet', pos: [-7, 6, -2], color: '#F97066', revealAt: 15, branches: [
-    { id: 'sec-v', label: 'Vulnerabilities', value: '3 → 0 Patched', dormant: [0.35, 0.4, 0], expanded: [0, 2.2, -1] },
-    { id: 'sec-s', label: 'Security Score', value: '84/100', dormant: [-0.35, 0.35, 0.2], expanded: [-1.8, 1.5, 0] },
-    { id: 'sec-m', label: 'Analysis', value: 'Claude Sonnet 3.5', dormant: [0.25, -0.3, -0.3], expanded: [1.8, 1.2, 0.5] },
+    { id: 'sec-v', label: 'Vulnerabilities', value: '3 → 0 Patched', dormant: [0.6, 0.6, 0], expanded: [0, 5.0, -2.5] },
+    { id: 'sec-s', label: 'Security Score', value: '84/100', dormant: [-0.6, 0.5, 0.3], expanded: [-4.5, 3.5, 0] },
+    { id: 'sec-m', label: 'Analysis', value: 'Claude Sonnet 3.5', dormant: [0.4, -0.5, -0.5], expanded: [4.5, 3.0, 1.2] },
   ]},
   { id: 'greenops', label: 'GreenOpsAgent', sublabel: 'Carbon API', pos: [-7, -6, 2], color: '#10B981', revealAt: 15, branches: [
-    { id: 'grn-r', label: 'Region', value: 'us-central1 → eu-north1', dormant: [0.35, -0.4, 0], expanded: [0, -2.2, 1] },
-    { id: 'grn-c', label: 'CO₂ Saved', value: '2.4 kg/month', dormant: [-0.35, -0.35, 0.2], expanded: [-1.8, -1.5, 0] },
-    { id: 'grn-e', label: 'Eco Score', value: '82/100', dormant: [0.25, 0.3, 0.3], expanded: [1.8, -1.2, 0.5] },
+    { id: 'grn-r', label: 'Region', value: 'us-central1 → eu-north1', dormant: [0.6, -0.6, 0], expanded: [0, -5.0, 2.5] },
+    { id: 'grn-c', label: 'CO₂ Saved', value: '2.4 kg/month', dormant: [-0.6, -0.5, 0.3], expanded: [-4.5, -3.5, 0] },
+    { id: 'grn-e', label: 'Eco Score', value: '82/100', dormant: [0.4, 0.5, 0.5], expanded: [4.5, -3.0, 1.2] },
   ]},
   { id: 'validation', label: 'ValidationAgent', sublabel: 'GitLab CI', pos: [1, 0, 0], color: '#38BDF8', revealAt: 35, branches: [
-    { id: 'val-t', label: 'Tests', value: '142/142 Passed ✅', dormant: [0.3, 0.4, 0], expanded: [0, 1.8, -0.5] },
-    { id: 'val-d', label: 'Duration', value: '47s', dormant: [-0.3, -0.35, 0], expanded: [0, -1.6, 0.5] },
+    { id: 'val-t', label: 'Tests', value: '142/142 Passed ✅', dormant: [0.5, 0.6, 0], expanded: [0, 4.5, -1.2] },
+    { id: 'val-d', label: 'Duration', value: '47s', dormant: [-0.5, -0.6, 0], expanded: [0, -4.0, 1.2] },
   ]},
   { id: 'risk', label: 'RiskEngine', sublabel: 'Release Authority', pos: [9, 4, -1], color: '#F59E0B', revealAt: 55, branches: [
-    { id: 'rsk-d', label: 'Decision', value: 'APPROVED', dormant: [0, 0.45, 0], expanded: [0, 2, -0.5] },
-    { id: 'rsk-c', label: 'Confidence', value: '91%', dormant: [0, -0.4, 0], expanded: [0, -1.6, 0.5] },
+    { id: 'rsk-d', label: 'Decision', value: 'APPROVED', dormant: [0, 0.7, 0], expanded: [0, 5.0, -1.2] },
+    { id: 'rsk-c', label: 'Confidence', value: '91%', dormant: [0, -0.6, 0], expanded: [0, -4.0, 1.2] },
   ]},
   { id: 'compliance', label: 'ComplianceAgent', sublabel: 'SOC2 / GDPR', pos: [17, -4, 1], color: '#8B5CF6', revealAt: 70, branches: [
-    { id: 'cmp-s', label: 'SOC2 Score', value: '88/100', dormant: [0.3, 0.35, 0], expanded: [1.2, 1.5, 0] },
-    { id: 'cmp-k', label: 'Checks', value: '8/9 Passed', dormant: [-0.3, 0.3, 0], expanded: [-1.2, 1.4, 0] },
+    { id: 'cmp-s', label: 'SOC2 Score', value: '88/100', dormant: [0.5, 0.5, 0], expanded: [3.0, 3.8, 0] },
+    { id: 'cmp-k', label: 'Checks', value: '8/9 Passed', dormant: [-0.5, 0.5, 0], expanded: [-3.0, 3.5, 0] },
   ]},
   { id: 'deploy', label: 'DeployAgent', sublabel: 'Cloud Run', pos: [25, 2, 0], color: '#06B6D4', revealAt: 85, branches: [
-    { id: 'dep-u', label: 'Deployed', value: 'auraops-demo.run.app', dormant: [0.3, 0.35, 0], expanded: [1.2, 1.5, 0] },
-    { id: 'dep-r', label: 'Region', value: 'europe-north1', dormant: [-0.3, -0.35, 0], expanded: [-1.2, -1.5, 0] },
+    { id: 'dep-u', label: 'Deployed', value: 'auraops-demo.run.app', dormant: [0.5, 0.5, 0], expanded: [3.0, 3.8, 0] },
+    { id: 'dep-r', label: 'Region', value: 'europe-north1', dormant: [-0.5, -0.5, 0], expanded: [-3.0, -3.8, 0] },
   ]},
   { id: 'scorecard', label: 'AuraOps Scorecard', sublabel: 'Release Complete', pos: [33, -2, 0], color: '#FBBf24', revealAt: 98, isScorecard: true, branches: [] },
 ];
