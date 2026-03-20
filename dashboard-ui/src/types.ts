@@ -1,67 +1,47 @@
 // ── AuraOps Type Definitions ──
 
-export interface PipelineNode {
+export type NodeType = 'core' | 'security' | 'greenops' | 'validation' | 'risk' | 'compliance';
+export type NodeStatus = 'idle' | 'running' | 'done' | 'error';
+
+export interface ChildNode {
   id: string;
-  position: [number, number, number];
   label: string;
-  type: 'core' | 'security' | 'greenops' | 'validation' | 'risk' | 'compliance' | 'deploy';
-  status: 'idle' | 'running' | 'done' | 'error';
+  value: string;
+  offset: [number, number, number];
+  color: string;
+}
+
+export interface NetworkNode {
+  id: string;
+  label: string;
+  type: NodeType;
+  position: [number, number, number];
   color: string;
   emissive: string;
-  orbitRadius: number;
-  orbitSpeed: number;
-  angle: number;
+  radius: number;
+  status: NodeStatus;
+  description: string;
+  children: ChildNode[];
 }
 
-export interface WebEdge {
-  sourceId: string;
-  targetId: string;
+export interface WebConnection {
+  from: string;
+  to: string;
   isActive: boolean;
+  pulseProgress: number; // 0..1, animated
 }
 
-export interface AgentState {
-  status: 'idle' | 'running' | 'done' | 'error';
-  time?: number;
+export interface PipelinePhase {
+  phase: number;          // 0=idle, 1=scanning, 2=risk, 3=compliance, 4=done
+  activeNodes: string[];  // which node IDs are currently running
+  completedNodes: string[];
 }
 
-export interface PipelineState {
-  phase: number;
-  agents: Record<string, AgentState>;
-}
-
-export interface MRResult {
-  mr_iid: number;
-  mr_title: string;
-  author: string;
-  decision: 'APPROVE' | 'NEEDS_FIX' | 'BLOCK';
-  confidence: number;
-  sec_score: number;
-  eco_score: number;
-  co2_saved: number;
-  deploy_url: string | null;
-  elapsed: number;
-  timestamp: string;
-  patches_committed: number;
-  vuln_count: number;
-  time_saved_min: number;
-}
-
-export interface VulnDiff {
-  type: string;
-  severity: 'crit' | 'high' | 'medium' | 'low';
-  confidence: number;
-  file: string;
-  before: string;
-  after: string;
-}
-
-export interface LiveEvent {
-  type?: string;
-  message: string;
-  timestamp: string;
-  phase?: number;
-  agent?: string;
-  agents?: string[];
-  status?: string;
-  time?: number;
+export interface GlobalResults {
+  totalMRs: number;
+  totalCO2: number;
+  avgSecScore: number;
+  vulnsPatched: number;
+  timeSavedMin: number;
+  visible: boolean;
 }

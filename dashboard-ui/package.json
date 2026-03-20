@@ -18,6 +18,8 @@
     "vite": "^8.0.1"
   },
   "dependencies": {
+    "@react-spring/core": "^10.0.3",
+    "@react-spring/three": "^10.0.3",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@types/three": "^0.183.1",
