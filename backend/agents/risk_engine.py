@@ -94,7 +94,11 @@ async def run(ctx: dict) -> dict:
             response = await asyncio.to_thread(
                 lambda: claude.messages.create(
                     model=CLAUDE_MODEL, max_tokens=1024,
-                    system=RISK_SYSTEM_PROMPT,
+                    system=[{
+                        "type": "text",
+                        "text": RISK_SYSTEM_PROMPT,
+                        "cache_control": {"type": "ephemeral"}
+                    }],
                     messages=[{"role": "user", "content": prompt}],
                 )
             )

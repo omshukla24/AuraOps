@@ -196,7 +196,20 @@ def _claude_scan(prompt: str, diff: str) -> list:
     try:
         response = claude.messages.create(
             model=CLAUDE_MODEL, max_tokens=4096,
-            messages=[{"role": "user", "content": f"{prompt}\n\nDiff:\n{diff}"}],
+            messages=[{
+                "role": "user", 
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Analyze this git diff:\n{diff}",
+                        "cache_control": {"type": "ephemeral"}
+                    },
+                    {
+                        "type": "text",
+                        "text": f"\n\nInstructions:\n{prompt}"
+                    }
+                ]
+            }],
         )
         track_tokens(response)
         text = response.content[0].text.strip()
