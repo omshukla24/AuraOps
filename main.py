@@ -1370,7 +1370,8 @@ def format_scorecard(ctx: dict, elapsed: int) -> str:
             est_min = v.get('time_saved_min', 0)
 
             lines.append(f"<details>")
-            lines.append(f"<summary>{'\u2705' if patched else '\u274c'} <code>{vuln_type}</code> in <code>{vuln_file}:{vuln_line}</code></summary>")
+            status_icon = '\u2705' if patched else '\u274c'
+            lines.append(f"<summary>{status_icon} <code>{vuln_type}</code> in <code>{vuln_file}:{vuln_line}</code></summary>")
             lines.append("")
             # Fix loop visualization
             lines.append(f"🔍 **Found:** {v.get('description', '')}")

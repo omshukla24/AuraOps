@@ -1,0 +1,21 @@
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+logs/
+*.mp4
+*.avi
+*.mov
+*.mkv
+New Text Document.txt
+README.md
+LICENSE
+*.log
+.venv/
+venv/
+.idea/
+.vscode/
