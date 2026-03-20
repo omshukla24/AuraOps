@@ -2,6 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Upgrade pip and install build tools for native dependencies
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
 # Install dependencies first for better Docker layer caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

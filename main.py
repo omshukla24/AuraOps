@@ -1223,7 +1223,7 @@ async def run_deploy_agent(ctx: dict) -> str | None:
         log(f"🚀 DeployAgent: No GCP project — returning mock URL: {mock_url}")
         return mock_url
 
-    service_name = "auraops-app"
+    service_name = "auraops"
     branch = ctx.get("source_branch", "main").replace("/", "-")[:20]
     tag = f"gcr.io/{GCP_PROJECT_ID}/{service_name}:{branch}"
 
