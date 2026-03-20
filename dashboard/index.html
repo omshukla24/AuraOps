@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraOps — Autonomous Release Authority Dashboard</title>
+    <meta name="description" content="AuraOps Dashboard: Real-time monitoring of autonomous AI-powered merge request analysis, security scoring, carbon optimization, and deployment decisions.">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111828;
+            --bg-card: #1a2235;
+            --bg-card-hover: #1f2a40;
+            --border-color: #2a3550;
+            --text-primary: #e8ecf4;
+            --text-secondary: #8b95a8;
+            --text-muted: #5a6478;
+            --accent-blue: #3b82f6;
+            --accent-blue-glow: rgba(59, 130, 246, 0.3);
+            --accent-green: #10b981;
+            --accent-green-glow: rgba(16, 185, 129, 0.3);
+            --accent-amber: #f59e0b;
+            --accent-amber-glow: rgba(245, 158, 11, 0.3);
+            --accent-red: #ef4444;
+            --accent-red-glow: rgba(239, 68, 68, 0.3);
+            --accent-coral: #f97066;
+            --accent-purple: #8b5cf6;
+            --accent-purple-glow: rgba(139, 92, 246, 0.2);
+            --gradient-blue: linear-gradient(135deg, #3b82f6, #6366f1);
+            --gradient-green: linear-gradient(135deg, #10b981, #34d399);
+            --gradient-coral: linear-gradient(135deg, #f97066, #fb923c);
+            --gradient-purple: linear-gradient(135deg, #8b5cf6, #a78bfa);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.3);
+            --shadow-glow: 0 0 30px rgba(59, 130, 246, 0.08);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background:
+                radial-gradient(circle at 15% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 85% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .app-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 24px 28px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            width: 44px;
+            height: 44px;
+            background: var(--gradient-blue);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25);
+        }
+
+        .header-text h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #e8ecf4, #8b95a8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-text .subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .status-badge.live {
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--accent-green);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .status-badge.demo {
+            background: rgba(245, 158, 11, 0.12);
+            color: var(--accent-amber);
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-badge.live .status-dot {
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green-glow);
+        }
+
+        .status-badge.demo .status-dot {
+            background: var(--accent-amber);
+            box-shadow: 0 0 8px var(--accent-amber-glow);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* ── METRIC CARDS ── */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 20px 22px;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            border-radius: var(--radius) var(--radius) 0 0;
+        }
+
+        .metric-card:nth-child(1)::before { background: var(--gradient-blue); }
+        .metric-card:nth-child(2)::before { background: var(--gradient-green); }
+        .metric-card:nth-child(3)::before { background: var(--gradient-coral); }
+        .metric-card:nth-child(4)::before { background: var(--gradient-purple); }
+
+        .metric-card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(59, 130, 246, 0.2);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .metric-icon {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .metric-card:nth-child(1) .metric-value { color: var(--accent-blue); }
+        .metric-card:nth-child(2) .metric-value { color: var(--accent-green); }
+        .metric-card:nth-child(3) .metric-value { color: var(--accent-coral); }
+        .metric-card:nth-child(4) .metric-value { color: var(--accent-purple); }
+
+        .metric-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .metric-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        /* ── CHARTS ── */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            transition: all 0.25s ease;
+        }
+
+        .chart-card:hover {
+            border-color: rgba(59, 130, 246, 0.15);
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-container {
+            height: 180px;
+            position: relative;
+        }
+
+        /* ── HISTORY TABLE ── */
+        .table-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-header h2 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .table-header .refresh-text {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(0,0,0,0.15);
+        }
+
+        tbody td {
+            padding: 13px 16px;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(42, 53, 80, 0.5);
+            color: var(--text-primary);
+        }
+
+        tbody tr {
+            transition: background 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background: rgba(59, 130, 246, 0.04);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .mr-number {
+            font-weight: 700;
+            color: var(--accent-blue);
+            font-size: 13px;
+        }
+
+        .mr-title-cell {
+            max-width: 220px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--text-secondary);
+        }
+
+        .decision-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .decision-badge.approved {
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--accent-green);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .decision-badge.needs-fix {
+            background: rgba(245, 158, 11, 0.12);
+            color: var(--accent-amber);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .decision-badge.blocked {
+            background: rgba(239, 68, 68, 0.12);
+            color: var(--accent-red);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .score-cell {
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .score-green { color: var(--accent-green); }
+        .score-amber { color: var(--accent-amber); }
+        .score-red { color: var(--accent-red); }
+
+        .deploy-link {
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            transition: color 0.2s;
+        }
+
+        .deploy-link:hover {
+            color: #60a5fa;
+        }
+
+        .no-deploy {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        /* ── LIVE FEED ── */
+        .live-feed {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-top: 24px;
+        }
+
+        .live-feed-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .live-feed-header h2 {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .feed-list {
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1.8;
+            color: var(--text-secondary);
+        }
+
+        .feed-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .feed-list::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .feed-entry {
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(42, 53, 80, 0.3);
+        }
+
+        .feed-time {
+            color: var(--text-muted);
+            margin-right: 8px;
+        }
+
+        .patches-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--accent-green);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        /* ── IMPACT BANNER ── */
+        .impact-banner {
+            background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(139,92,246,0.08), rgba(16,185,129,0.08));
+            border: 1px solid rgba(59,130,246,0.15);
+            border-radius: var(--radius);
+            padding: 20px 28px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .impact-stat { text-align: center; }
+        .impact-stat .val {
+            font-size: 36px; font-weight: 800; letter-spacing: -1px; line-height: 1;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .impact-stat .val.green { background: linear-gradient(135deg,#10b981,#34d399); -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+        .impact-stat .val.coral { background: linear-gradient(135deg,#f97066,#fb923c); -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+        .impact-stat .lbl { font-size: 12px; color: var(--text-secondary); font-weight: 600; margin-top: 4px; }
+        .impact-sep { width: 1px; height: 40px; background: var(--border-color); }
+
+        /* ── DEMO BUTTON ── */
+        .demo-btn {
+            padding: 10px 22px; border-radius: 10px; border: none; cursor: pointer;
+            font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700;
+            background: var(--gradient-blue); color: white; letter-spacing: 0.3px;
+            box-shadow: 0 4px 16px rgba(59,130,246,0.3);
+            transition: all 0.3s ease; display: flex; align-items: center; gap: 8px;
+        }
+        .demo-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(59,130,246,0.45); }
+        .demo-btn:active { transform: translateY(0); }
+        .demo-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+        .demo-btn .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── PIPELINE VIZ ── */
+        .pipeline-viz {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: var(--radius); padding: 20px 24px; margin-bottom: 20px;
+        }
+        .pipeline-viz-title { font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .pipeline-flow { display: flex; align-items: center; gap: 0; overflow-x: auto; }
+        .pipeline-phase { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .phase-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+        .phase-agents { display: flex; gap: 6px; }
+        .agent-node {
+            width: 72px; min-height: 56px; border-radius: 8px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 2px;
+            font-size: 10px; font-weight: 600; text-align: center;
+            background: rgba(42,53,80,0.4); border: 1.5px solid var(--border-color);
+            color: var(--text-muted); transition: all 0.4s ease; padding: 6px 4px;
+        }
+        .agent-node.running {
+            background: rgba(59,130,246,0.12); border-color: var(--accent-blue);
+            color: var(--accent-blue); box-shadow: 0 0 16px var(--accent-blue-glow);
+            animation: nodePulse 1.5s ease-in-out infinite;
+        }
+        .agent-node.done {
+            background: rgba(16,185,129,0.1); border-color: var(--accent-green);
+            color: var(--accent-green); box-shadow: 0 0 12px var(--accent-green-glow);
+        }
+        .agent-node.error {
+            background: rgba(239,68,68,0.1); border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+        .agent-node .agent-icon { font-size: 16px; }
+        .agent-node .agent-time { font-size: 9px; color: var(--text-muted); }
+        .pipeline-arrow { color: var(--text-muted); font-size: 18px; margin: 0 6px; padding-top: 14px; }
+        .pipeline-arrow.active { color: var(--accent-blue); }
+        @keyframes nodePulse { 0%,100% { box-shadow: 0 0 8px var(--accent-blue-glow); } 50% { box-shadow: 0 0 24px var(--accent-blue-glow); } }
+
+        /* ── DIFF VIEWER ── */
+        .diff-viewer { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+        .diff-viewer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; cursor: pointer; }
+        .diff-viewer-header h2 { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .diff-toggle { font-size: 12px; color: var(--text-muted); cursor: pointer; }
+        .diff-list { display: flex; flex-direction: column; gap: 12px; }
+        .diff-item { border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; }
+        .diff-item-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(0,0,0,0.2); flex-wrap: wrap; }
+        .diff-vuln-type { font-weight: 700; font-size: 13px; color: var(--text-primary); }
+        .diff-severity { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .diff-severity.crit { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+        .diff-severity.high { background: rgba(245,158,11,0.15); color: var(--accent-amber); }
+        .diff-severity.med { background: rgba(59,130,246,0.15); color: var(--accent-blue); }
+        .diff-confidence { font-size: 11px; color: var(--accent-green); font-weight: 600; margin-left: auto; }
+        .diff-file { font-size: 11px; color: var(--text-muted); font-family: monospace; }
+        .diff-panels { display: grid; grid-template-columns: 1fr 1fr; }
+        .diff-panel { padding: 12px 14px; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
+        .diff-panel.before { background: rgba(239,68,68,0.04); border-right: 1px solid var(--border-color); color: #fca5a5; }
+        .diff-panel.after { background: rgba(16,185,129,0.04); color: #6ee7b7; }
+        .diff-panel-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; font-family: 'Inter', sans-serif; }
+        .diff-panel.before .diff-panel-label { color: var(--accent-red); }
+        .diff-panel.after .diff-panel-label { color: var(--accent-green); }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 900px) {
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+            .charts-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 550px) {
+            .metrics-grid { grid-template-columns: 1fr; }
+            .header { flex-direction: column; gap: 12px; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        // ── MOCK DATA (always displayed as fallback) ──
+        const MOCK_DATA = [
+            {
+                mr_iid: 38, mr_title: "fix: database connection pooling",
+                author: "sarah", decision: "BLOCK", confidence: 92,
+                sec_score: 22, eco_score: 65, co2_saved: 0,
+                deploy_url: null, elapsed: 38,
+                timestamp: "2026-03-18T08:12:00Z",
+                patches_committed: 0, vuln_count: 4, time_saved_min: 0
+            },
+            {
+                mr_iid: 39, mr_title: "feat: add user authentication flow",
+                author: "alex", decision: "NEEDS_FIX", confidence: 68,
+                sec_score: 44, eco_score: 58, co2_saved: 0.8,
+                deploy_url: null, elapsed: 42,
+                timestamp: "2026-03-18T10:24:00Z",
+                patches_committed: 1, vuln_count: 3, time_saved_min: 25
+            },
+            {
+                mr_iid: 40, mr_title: "refactor: optimize user queries with caching",
+                author: "sarah", decision: "APPROVE", confidence: 95,
+                sec_score: 96, eco_score: 88, co2_saved: 1.2,
+                deploy_url: "https://auraops-app-v40.run.app", elapsed: 35,
+                timestamp: "2026-03-18T14:05:00Z",
+                patches_committed: 1, vuln_count: 1, time_saved_min: 15
+            },
+            {
+                mr_iid: 41, mr_title: "feat: payment gateway integration",
+                author: "mike", decision: "APPROVE", confidence: 88,
+                sec_score: 82, eco_score: 76, co2_saved: 2.4,
+                deploy_url: "https://auraops-app-v41.run.app", elapsed: 51,
+                timestamp: "2026-03-19T07:15:00Z",
+                patches_committed: 2, vuln_count: 2, time_saved_min: 45
+            },
+            {
+                mr_iid: 42, mr_title: "feat: add user payment flow",
+                author: "devname", decision: "APPROVE", confidence: 91,
+                sec_score: 84, eco_score: 82, co2_saved: 2.4,
+                deploy_url: "https://auraops-demo.run.app", elapsed: 43,
+                timestamp: "2026-03-19T09:23:00Z",
+                patches_committed: 3, vuln_count: 3, time_saved_min: 70
+            },
+            {
+                mr_iid: 43, mr_title: "chore: update CI for multi-region deploy",
+                author: "alex", decision: "APPROVE", confidence: 94,
+                sec_score: 100, eco_score: 95, co2_saved: 5.8,
+                deploy_url: "https://auraops-app-v43.run.app", elapsed: 29,
+                timestamp: "2026-03-19T11:01:00Z",
+                patches_committed: 0, vuln_count: 0, time_saved_min: 0
+            },
+        ];
+
+        // ── UTILITY FUNCTIONS ──
+        function scoreColor(score) {
+            if (score >= 70) return 'score-green';
+            if (score >= 40) return 'score-amber';
+            return 'score-red';
+        }
+
+        function decisionClass(decision) {
+            if (decision === 'APPROVE') return 'approved';
+            if (decision === 'NEEDS_FIX') return 'needs-fix';
+            return 'blocked';
+        }
+
+        function decisionLabel(decision) {
+            if (decision === 'APPROVE') return 'Approved';
+            if (decision === 'NEEDS_FIX') return 'Needs Fix';
+            return 'Blocked';
+        }
+
+        // ── COMPONENTS ──
+
+        function Header({ isLive, demoStatus, demoRunning, onRunDemo }) {
+            return (
+                <header className="header">
+                    <div className="header-left">
+                        <div className="logo">✦</div>
+                        <div className="header-text">
+                            <h1>AuraOps</h1>
+                            <div className="subtitle">Autonomous Release Authority</div>
+                        </div>
+                    </div>
+                    <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+                        <button className="demo-btn" onClick={onRunDemo} disabled={demoRunning}>
+                            {demoStatus === 'running' ? (<><span className="spinner"></span> Running...</>) :
+                             demoStatus === 'done' ? '✅ Done!' : '▶ Run Demo'}
+                        </button>
+                        <div className={`status-badge ${isLive ? 'live' : 'demo'}`}>
+                            <div className="status-dot"></div>
+                            {isLive ? 'Live' : 'Demo'}
+                        </div>
+                    </div>
+                </header>
+            );
+        }
+
+        function MetricCards({ data }) {
+            const totalMRs = data.length;
+            const totalCO2 = data.reduce((sum, d) => sum + (d.co2_saved || 0), 0).toFixed(1);
+            const avgSec = totalMRs > 0
+                ? Math.round(data.reduce((sum, d) => sum + (d.sec_score || 0), 0) / totalMRs)
+                : 0;
+            const approvals = data.filter(d => d.decision === 'APPROVE').length;
+            const totalPatches = data.reduce((sum, d) => sum + (d.patches_committed || 0), 0);
+            const totalTimeSaved = data.reduce((sum, d) => sum + (d.time_saved_min || 0), 0);
+
+            return (
+                <div className="metrics-grid">
+                    <div className="metric-card">
+                        <div className="metric-icon">📊</div>
+                        <div className="metric-value">{totalMRs}</div>
+                        <div className="metric-label">MRs Processed</div>
+                        <div className="metric-sub">total analyzed</div>
+                    </div>
+                    <div className="metric-card">
+                        <div className="metric-icon">🔐</div>
+                        <div className="metric-value">{totalPatches}</div>
+                        <div className="metric-label">Vulns Patched</div>
+                        <div className="metric-sub">auto-remediated</div>
+                    </div>
+                    <div className="metric-card">
+                        <div className="metric-icon">⏱️</div>
+                        <div className="metric-value">{totalTimeSaved}</div>
+                        <div className="metric-label">Minutes Saved</div>
+                        <div className="metric-sub">vs manual triage</div>
+                    </div>
+                    <div className="metric-card">
+                        <div className="metric-icon">🔒</div>
+                        <div className="metric-value">{avgSec}</div>
+                        <div className="metric-label">Avg Security</div>
+                        <div className="metric-sub">across all MRs</div>
+                    </div>
+                    <div className="metric-card">
+                        <div className="metric-icon">🌍</div>
+                        <div className="metric-value">{totalCO2}</div>
+                        <div className="metric-label">CO₂ Saved</div>
+                        <div className="metric-sub">kg/month cumulative</div>
+                    </div>
+                    <div className="metric-card">
+                        <div className="metric-icon">🚀</div>
+                        <div className="metric-value">{approvals}</div>
+                        <div className="metric-label">Approvals</div>
+                        <div className="metric-sub">of {totalMRs} MRs</div>
+                    </div>
+                </div>
+            );
+        }
+
+        function Charts({ data }) {
+            const scoresCanvasRef = useRef(null);
+            const co2CanvasRef = useRef(null);
+            const scoresChartRef = useRef(null);
+            const co2ChartRef = useRef(null);
+
+            useEffect(() => {
+                if (!data || data.length === 0) return;
+
+                const labels = data.map(d => `!${d.mr_iid}`);
+                const secScores = data.map(d => d.sec_score || 0);
+                const ecoScores = data.map(d => d.eco_score || 0);
+                const co2Values = data.map(d => d.co2_saved || 0);
+
+                // Cumulative CO2
+                let cumulative = 0;
+                const co2Cumulative = co2Values.map(v => { cumulative += v; return parseFloat(cumulative.toFixed(1)); });
+
+                const commonOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#8b95a8',
+                                font: { family: 'Inter', size: 11, weight: '600' },
+                                boxWidth: 12,
+                                padding: 16,
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#5a6478', font: { family: 'Inter', size: 11 } },
+                            grid: { color: 'rgba(42, 53, 80, 0.4)' },
+                        },
+                        y: {
+                            ticks: { color: '#5a6478', font: { family: 'Inter', size: 11 } },
+                            grid: { color: 'rgba(42, 53, 80, 0.4)' },
+                        }
+                    }
+                };
+
+                // ── Scores Line Chart ──
+                if (scoresChartRef.current) {
+                    scoresChartRef.current.data.labels = labels;
+                    scoresChartRef.current.data.datasets[0].data = secScores;
+                    scoresChartRef.current.data.datasets[1].data = ecoScores;
+                    scoresChartRef.current.update('none');
+                } else if (scoresCanvasRef.current) {
+                    scoresChartRef.current = new Chart(scoresCanvasRef.current, {
+                        type: 'line',
+                        data: {
+                            labels,
+                            datasets: [
+                                {
+                                    label: 'Security Score',
+                                    data: secScores,
+                                    borderColor: '#f97066',
+                                    backgroundColor: 'rgba(249, 112, 102, 0.1)',
+                                    borderWidth: 2.5,
+                                    tension: 0.35,
+                                    pointRadius: 4,
+                                    pointBackgroundColor: '#f97066',
+                                    fill: true,
+                                },
+                                {
+                                    label: 'Eco Score',
+                                    data: ecoScores,
+                                    borderColor: '#10b981',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                    borderWidth: 2.5,
+                                    tension: 0.35,
+                                    pointRadius: 4,
+                                    pointBackgroundColor: '#10b981',
+                                    fill: true,
+                                },
+                            ],
+                        },
+                        options: {
+                            ...commonOptions,
+                            scales: {
+                                ...commonOptions.scales,
+                                y: { ...commonOptions.scales.y, min: 0, max: 100 }
+                            }
+                        },
+                    });
+                }
+
+                // ── CO2 Bar Chart ──
+                if (co2ChartRef.current) {
+                    co2ChartRef.current.data.labels = labels;
+                    co2ChartRef.current.data.datasets[0].data = co2Cumulative;
+                    co2ChartRef.current.update('none');
+                } else if (co2CanvasRef.current) {
+                    co2ChartRef.current = new Chart(co2CanvasRef.current, {
+                        type: 'bar',
+                        data: {
+                            labels,
+                            datasets: [{
+                                label: 'Cumulative CO₂ Saved (kg)',
+                                data: co2Cumulative,
+                                backgroundColor: 'rgba(16, 185, 129, 0.35)',
+                                borderColor: '#10b981',
+                                borderWidth: 1.5,
+                                borderRadius: 6,
+                            }],
+                        },
+                        options: {
+                            ...commonOptions,
+                            scales: {
+                                ...commonOptions.scales,
+                                y: { ...commonOptions.scales.y, min: 0 }
+                            }
+                        },
+                    });
+                }
+
+            }, [data]);
+
+            return (
+                <div className="charts-grid">
+                    <div className="chart-card">
+                        <div className="chart-title">📈 Score Trends</div>
+                        <div className="chart-container">
+                            <canvas ref={scoresCanvasRef}></canvas>
+                        </div>
+                    </div>
+                    <div className="chart-card">
+                        <div className="chart-title">🌱 Cumulative CO₂ Saved</div>
+                        <div className="chart-container">
+                            <canvas ref={co2CanvasRef}></canvas>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function HistoryTable({ data }) {
+            const rows = [...data].reverse();
+            return (
+                <div className="table-card">
+                    <div className="table-header">
+                        <h2>📋 MR History</h2>
+                        <span className="refresh-text">Auto-refreshes every 30s</span>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>MR#</th>
+                                <th>Title</th>
+                                <th>Decision</th>
+                                <th>Security</th>
+                                <th>Patches</th>
+                                <th>Eco</th>
+                                <th>CO₂ Saved</th>
+                                <th>Deploy</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows.map((row, i) => (
+                                <tr key={i}>
+                                    <td><span className="mr-number">!{row.mr_iid}</span></td>
+                                    <td className="mr-title-cell" title={row.mr_title}>{row.mr_title}</td>
+                                    <td>
+                                        <span className={`decision-badge ${decisionClass(row.decision)}`}>
+                                            {decisionLabel(row.decision)}
+                                        </span>
+                                    </td>
+                                    <td><span className={`score-cell ${scoreColor(row.sec_score)}`}>{row.sec_score}</span></td>
+                                    <td>
+                                        {(row.patches_committed || 0) > 0 ? (
+                                            <span className="patches-badge">✅ {row.patches_committed}</span>
+                                        ) : (
+                                            <span className="no-deploy">—</span>
+                                        )}
+                                    </td>
+                                    <td><span className={`score-cell ${scoreColor(row.eco_score)}`}>{row.eco_score}</span></td>
+                                    <td>{row.co2_saved > 0 ? `${row.co2_saved} kg` : '—'}</td>
+                                    <td>
+                                        {row.deploy_url ? (
+                                            <a href={row.deploy_url} target="_blank" rel="noopener" className="deploy-link">
+                                                Live ↗
+                                            </a>
+                                        ) : (
+                                            <span className="no-deploy">—</span>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            );
+        }
+
+        function LiveFeed({ demoLog }) {
+            const [events, setEvents] = useState([]);
+
+            useEffect(() => {
+                let es;
+                try {
+                    es = new EventSource('/api/events');
+                    es.onmessage = (e) => {
+                        try {
+                            const evt = JSON.parse(e.data);
+                            if (evt.type === 'heartbeat') return;
+                            setEvents(prev => [...prev.slice(-49), evt]);
+                        } catch(err) {}
+                    };
+                    es.onerror = () => { es.close(); };
+                } catch(err) {}
+                return () => { if (es) es.close(); };
+            }, []);
+
+            const allEvents = [...(demoLog || []), ...events];
+            if (allEvents.length === 0) return null;
+
+            return (
+                <div className="live-feed">
+                    <div className="live-feed-header">
+                        <h2>⚡ Live Agent Feed</h2>
+                        <span className="refresh-text">{allEvents.length} events</span>
+                    </div>
+                    <div className="feed-list">
+                        {allEvents.map((evt, i) => (
+                            <div key={i} className="feed-entry">
+                                <span className="feed-time">
+                                    {evt.timestamp ? new Date(evt.timestamp).toLocaleTimeString() : ''}
+                                </span>
+                                {evt.message}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // ── DEMO VULNERABILITY DATA (from demo_vulnerable_app.py) ──
+        const DEMO_VULNS = [
+            { type: 'SQL Injection', severity: 'crit', confidence: 96, file: 'demo_vulnerable_app.py:38',
+              before: 'query = f"SELECT * FROM users WHERE id = {user_id}"\ncursor.execute(query)',
+              after: 'query = "SELECT * FROM users WHERE id = ?"\ncursor.execute(query, (user_id,))' },
+            { type: 'Hardcoded API Key', severity: 'crit', confidence: 98, file: 'demo_vulnerable_app.py:29',
+              before: 'STRIPE_API_KEY = "sk_live_4eC39HqLyjWDarjtT1zdp7dc"',
+              after: 'STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY", "")' },
+            { type: 'Command Injection', severity: 'crit', confidence: 94, file: 'demo_vulnerable_app.py:56',
+              before: 'result = subprocess.run(\n  f"ping -c 4 {host}",\n  shell=True, capture_output=True)',
+              after: 'result = subprocess.run(\n  ["ping", "-c", "4", host],\n  capture_output=True, text=True)' },
+            { type: 'Cross-Site Scripting', severity: 'high', confidence: 91, file: 'demo_vulnerable_app.py:71',
+              before: 'html = f"<h1>Welcome, {username}!</h1>"',
+              after: 'from markupsafe import escape\nhtml = f"<h1>Welcome, {escape(username)}!</h1>"' },
+            { type: 'Path Traversal', severity: 'high', confidence: 89, file: 'demo_vulnerable_app.py:84',
+              before: 'filepath = os.path.join("/app/uploads", filename)\nreturn send_file(filepath)',
+              after: 'safe = secure_filename(filename)\nfilepath = os.path.join("/app/uploads", safe)\nreturn send_file(filepath)' },
+            { type: 'Hardcoded Password', severity: 'crit', confidence: 97, file: 'demo_vulnerable_app.py:31',
+              before: 'DATABASE_PASSWORD = "SuperSecret123!"',
+              after: 'DATABASE_PASSWORD = os.environ.get("DB_PASSWORD", "")' },
+            { type: 'Insecure Deserialization', severity: 'high', confidence: 85, file: 'demo_vulnerable_app.py:93',
+              before: 'session = pickle.loads(data)',
+              after: 'session = json.loads(data)  # Safe JSON parsing' },
+        ];
+
+        // ── INITIAL DIFFS (shown before demo runs) ──
+        const INITIAL_DIFFS = DEMO_VULNS.slice(0, 2);
+
+        // ── IMPACT BANNER ──
+        function ImpactBanner({ data }) {
+            const [anim, setAnim] = useState({ vulns: 0, mins: 0, mrs: 0 });
+            const totalVulns = data.reduce((s, d) => s + (d.patches_committed || 0), 0);
+            const totalMins = data.reduce((s, d) => s + (d.time_saved_min || 0), 0);
+            const totalMRs = data.length;
+
+            useEffect(() => {
+                const dur = 1200, steps = 30, interval = dur / steps;
+                let step = 0;
+                const timer = setInterval(() => {
+                    step++;
+                    const pct = Math.min(step / steps, 1);
+                    const ease = 1 - Math.pow(1 - pct, 3);
+                    setAnim({ vulns: Math.round(totalVulns * ease), mins: Math.round(totalMins * ease), mrs: Math.round(totalMRs * ease) });
+                    if (step >= steps) clearInterval(timer);
+                }, interval);
+                return () => clearInterval(timer);
+            }, [totalVulns, totalMins, totalMRs]);
+
+            return (
+                <div className="impact-banner">
+                    <div className="impact-stat"><div className="val coral">{anim.vulns}</div><div className="lbl">Vulnerabilities Patched</div></div>
+                    <div className="impact-sep"></div>
+                    <div className="impact-stat"><div className="val green">{anim.mins}</div><div className="lbl">Minutes Saved</div></div>
+                    <div className="impact-sep"></div>
+                    <div className="impact-stat"><div className="val">{anim.mrs}</div><div className="lbl">MRs Secured</div></div>
+                </div>
+            );
+        }
+
+        // ── PIPELINE VIZ ──
+        const AGENTS = {
+            security: { icon: '🔐', label: 'Security' }, greenops: { icon: '🌍', label: 'GreenOps' },
+            validation: { icon: '✅', label: 'Validate' }, risk: { icon: '🧠', label: 'Risk' },
+            compliance: { icon: '📋', label: 'Comply' }, deploy: { icon: '🚀', label: 'Deploy' },
+        };
+
+        function PipelineViz({ pipelineState }) {
+            const { phase, agents } = pipelineState;
+            const getStatus = (name, ph) => {
+                const a = agents[name];
+                if (!a) return phase > ph ? 'done' : '';
+                return a.status;
+            };
+            const phaseActive = (ph) => phase >= ph;
+
+            return (
+                <div className="pipeline-viz">
+                    <div className="pipeline-viz-title">🏗️ Agent Pipeline</div>
+                    <div className="pipeline-flow">
+                        <div className="pipeline-phase">
+                            <div className="phase-label">Trigger</div>
+                            <div className="phase-agents">
+                                <div className={`agent-node ${phase >= 1 ? 'done' : ''}`}>
+                                    <span className="agent-icon">⚡</span>Webhook
+                                </div>
+                            </div>
+                        </div>
+                        <div className={`pipeline-arrow ${phaseActive(1) ? 'active' : ''}`}>→</div>
+                        <div className="pipeline-phase">
+                            <div className="phase-label">Phase 1</div>
+                            <div className="phase-agents">
+                                {['security','greenops','validation'].map(n => (
+                                    <div key={n} className={`agent-node ${getStatus(n, 1)}`}>
+                                        <span className="agent-icon">{AGENTS[n].icon}</span>
+                                        {AGENTS[n].label}
+                                        {agents[n]?.time && <span className="agent-time">{agents[n].time}s</span>}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className={`pipeline-arrow ${phaseActive(2) ? 'active' : ''}`}>→</div>
+                        <div className="pipeline-phase">
+                            <div className="phase-label">Phase 2</div>
+                            <div className="phase-agents">
+                                <div className={`agent-node ${getStatus('risk', 2)}`}>
+                                    <span className="agent-icon">🧠</span>RiskEngine
+                                    {agents.risk?.time && <span className="agent-time">{agents.risk.time}s</span>}
+                                </div>
+                            </div>
+                        </div>
+                        <div className={`pipeline-arrow ${phaseActive(3) ? 'active' : ''}`}>→</div>
+                        <div className="pipeline-phase">
+                            <div className="phase-label">Phase 3</div>
+                            <div className="phase-agents">
+                                {['compliance','deploy'].map(n => (
+                                    <div key={n} className={`agent-node ${getStatus(n, 3)}`}>
+                                        <span className="agent-icon">{AGENTS[n].icon}</span>
+                                        {AGENTS[n].label}
+                                        {agents[n]?.time && <span className="agent-time">{agents[n].time}s</span>}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className={`pipeline-arrow ${phase >= 4 ? 'active' : ''}`}>→</div>
+                        <div className="pipeline-phase">
+                            <div className="phase-label">Result</div>
+                            <div className="phase-agents">
+                                <div className={`agent-node ${phase >= 4 ? 'done' : ''}`}>
+                                    <span className="agent-icon">📊</span>Scorecard
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ── DIFF VIEWER ──
+        function VulnDiffViewer({ diffs }) {
+            const [open, setOpen] = useState(true);
+            if (!diffs || diffs.length === 0) return null;
+            return (
+                <div className="diff-viewer">
+                    <div className="diff-viewer-header" onClick={() => setOpen(!open)}>
+                        <h2>🔀 Vulnerability Patches ({diffs.length})</h2>
+                        <span className="diff-toggle">{open ? '▼ Collapse' : '▶ Expand'}</span>
+                    </div>
+                    {open && (
+                        <div className="diff-list">
+                            {diffs.map((d, i) => (
+                                <div key={i} className="diff-item">
+                                    <div className="diff-item-header">
+                                        <span className="diff-vuln-type">{d.type}</span>
+                                        <span className={`diff-severity ${d.severity}`}>{d.severity === 'crit' ? 'Critical' : d.severity === 'high' ? 'High' : 'Medium'}</span>
+                                        <span className="diff-file">{d.file}</span>
+                                        <span className="diff-confidence">✅ {d.confidence}% confidence</span>
+                                    </div>
+                                    <div className="diff-panels">
+                                        <div className="diff-panel before"><div className="diff-panel-label">⛔ Vulnerable</div>{d.before}</div>
+                                        <div className="diff-panel after"><div className="diff-panel-label">✅ Patched</div>{d.after}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // ── MAIN APP ──
+        function App() {
+            const [data, setData] = useState(MOCK_DATA);
+            const [isLive, setIsLive] = useState(false);
+            const [demoRunning, setDemoRunning] = useState(false);
+            const [demoStatus, setDemoStatus] = useState('idle');
+            const [diffs, setDiffs] = useState(INITIAL_DIFFS);
+            const [pipelineState, setPipelineState] = useState({ phase: 0, agents: {} });
+            const [liveLog, setLiveLog] = useState([]);
+
+            // Helper to add live log entries
+            const addLog = (msg) => {
+                setLiveLog(prev => [{ message: msg, timestamp: new Date().toISOString() }, ...prev].slice(0, 50));
+            };
+
+            // SSE handler — drives pipeline viz + notifications
+            useEffect(() => {
+                let es;
+                try {
+                    es = new EventSource('/api/events');
+                    es.onmessage = (e) => {
+                        try {
+                            const evt = JSON.parse(e.data);
+                            if (evt.type === 'heartbeat') return;
+                            if (evt.type === 'pipeline_start') {
+                                setPipelineState({ phase: 0, agents: {} });
+                                setTimeout(() => setPipelineState(s => ({ ...s, phase: 0.5 })), 100);
+                            } else if (evt.type === 'phase_start') {
+                                const ph = evt.phase || 1;
+                                setPipelineState(s => {
+                                    const newAgents = { ...s.agents };
+                                    (evt.agents || []).forEach(a => { newAgents[a] = { status: 'running' }; });
+                                    return { phase: ph, agents: newAgents };
+                                });
+                            } else if (evt.type === 'agent_complete') {
+                                setPipelineState(s => {
+                                    const newAgents = { ...s.agents };
+                                    newAgents[evt.agent] = { status: evt.status === 'error' ? 'error' : 'done', time: evt.time };
+                                    return { ...s, agents: newAgents };
+                                });
+                            } else if (evt.type === 'pipeline_complete') {
+                                setPipelineState(s => {
+                                    const newAgents = {};
+                                    Object.keys(s.agents).forEach(k => { newAgents[k] = { ...s.agents[k], status: 'done' }; });
+                                    return { phase: 4, agents: newAgents };
+                                });
+                                setDemoRunning(false);
+                                setDemoStatus('done');
+                                setTimeout(() => setDemoStatus('idle'), 3000);
+                                if (Notification.permission === 'granted') {
+                                    new Notification('AuraOps', { body: `MR !${evt.mr_iid} — ${evt.decision}`, icon: '🤖' });
+                                }
+                            } else if (evt.type === 'pipeline_error') {
+                                setDemoRunning(false); setDemoStatus('idle');
+                            }
+                        } catch(err) {}
+                    };
+                    es.onerror = () => { es.close(); };
+                } catch(err) {}
+                return () => { if (es) es.close(); };
+            }, []);
+
+            const runDemo = async () => {
+                if (Notification.permission === 'default') Notification.requestPermission();
+                setDemoRunning(true); setDemoStatus('running');
+                setPipelineState({ phase: 0, agents: {} });
+                setDiffs([]);  // Clear diffs — they'll appear one-by-one
+                addLog('📋 Processing MR !44: feat: add user payment & auth flow [demo_vulnerable_app.py]');
+
+                try {
+                    const resp = await fetch('/trigger-test', { method: 'POST' });
+                    if (!resp.ok) throw new Error('Server error');
+                } catch(e) {
+                    // ── FULL OFFLINE SIMULATION ──
+                    const delay = (ms) => new Promise(r => setTimeout(r, ms));
+
+                    // ── Phase 1: Security + GreenOps + Validation ──
+                    addLog('⚡ Phase 1: SecurityAgent + GreenOpsAgent + ValidationAgent (parallel)');
+                    setPipelineState({ phase: 1, agents: { security: { status: 'running' }, greenops: { status: 'running' }, validation: { status: 'running' } } });
+                    await delay(600);
+
+                    // SecurityAgent finds vulns one by one
+                    addLog('🔐 SecurityAgent: Scanning demo_vulnerable_app.py for vulnerabilities...');
+                    await delay(400);
+                    for (let i = 0; i < DEMO_VULNS.length; i++) {
+                        setDiffs(prev => [...prev, DEMO_VULNS[i]]);
+                        addLog(`  ✅ Patched ${DEMO_VULNS[i].type} in ${DEMO_VULNS[i].file} (${DEMO_VULNS[i].confidence}%)`);
+                        await delay(350);
+                    }
+                    addLog(`🔐 SecurityAgent: ${DEMO_VULNS.length}/${DEMO_VULNS.length} patched, score 62/100`);
+                    await delay(300);
+
+                    addLog('🌱 GreenOpsAgent: Optimized region us-central1 → europe-north1 (saved 2.1 kg CO₂)');
+                    addLog('✅ ValidationAgent: CI pipeline passed');
+                    setPipelineState({ phase: 1, agents: { security: { status: 'done', time: 4.1 }, greenops: { status: 'done', time: 1.9 }, validation: { status: 'done', time: 2.3 } } });
+                    await delay(500);
+
+                    // ── Phase 2: RiskEngine ──
+                    addLog('🧠 Phase 2: RiskEngine making deployment decision');
+                    setPipelineState(s => ({ ...s, phase: 2, agents: { ...s.agents, risk: { status: 'running' } } }));
+                    await delay(1200);
+                    addLog('🧠 RiskEngine: NEEDS_FIX — 4 critical vulns found, confidence 87%');
+                    setPipelineState(s => ({ ...s, agents: { ...s.agents, risk: { status: 'done', time: 2.8 } } }));
+                    await delay(400);
+
+                    // ── Phase 3: Compliance + Deploy ──
+                    addLog('📋 Phase 3: ComplianceAgent + DeployAgent (parallel)');
+                    setPipelineState(s => ({ ...s, phase: 3, agents: { ...s.agents, compliance: { status: 'running' }, deploy: { status: 'running' } } }));
+                    await delay(800);
+                    addLog('📋 ComplianceAgent: SOC2 score 78/100 — CONDITIONAL PASS');
+                    addLog('🚀 DeployAgent: Staged to https://auraops-demo-v44.run.app');
+                    setPipelineState(s => ({ phase: 4, agents: { ...s.agents, compliance: { status: 'done', time: 1.7 }, deploy: { status: 'done', time: 3.1 } } }));
+                    await delay(300);
+
+                    // ── Update ALL dashboard sections ──
+                    const newEntry = {
+                        mr_iid: 44,
+                        mr_title: 'feat: add user payment & auth flow',
+                        author: 'demo-dev',
+                        decision: 'NEEDS_FIX',
+                        confidence: 87,
+                        sec_score: 62,
+                        eco_score: 91,
+                        co2_saved: 2.1,
+                        deploy_url: 'https://auraops-demo-v44.run.app',
+                        elapsed: 14,
+                        timestamp: new Date().toISOString(),
+                        patches_committed: 7,
+                        vuln_count: 7,
+                        time_saved_min: 190,
+                    };
+                    setData(prev => [newEntry, ...prev]);
+                    addLog(`✅ AuraOps completed MR !44 in 14s — NEEDS_FIX (7 vulns patched, 190 min saved)`);
+
+                    setDemoRunning(false);
+                    setDemoStatus('done');
+                    if (Notification.permission === 'granted') {
+                        new Notification('AuraOps — MR !44', { body: '7 vulnerabilities patched! Decision: NEEDS_FIX (87% confidence)' });
+                    }
+                    setTimeout(() => setDemoStatus('idle'), 4000);
+                }
+            };
+
+            const fetchData = useCallback(async () => {
+                try {
+                    const resp = await fetch('/api/history');
+                    if (resp.ok) {
+                        const json = await resp.json();
+                        if (Array.isArray(json) && json.length > 0) {
+                            setData(json);
+                            setIsLive(true);
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    // Server not running — fall back to mock
+                }
+                setData(MOCK_DATA);
+                setIsLive(false);
+            }, []);
+
+            useEffect(() => {
+                fetchData();
+                const interval = setInterval(fetchData, 30000);
+                return () => clearInterval(interval);
+            }, [fetchData]);
+
+            return (
+                <div className="app-container">
+                    <Header isLive={isLive} demoStatus={demoStatus} demoRunning={demoRunning} onRunDemo={runDemo} />
+                    <ImpactBanner data={data} />
+                    <PipelineViz pipelineState={pipelineState} />
+                    <VulnDiffViewer diffs={diffs} />
+                    <MetricCards data={data} />
+                    <Charts data={data} />
+                    <HistoryTable data={data} />
+                    <LiveFeed demoLog={liveLog} />
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

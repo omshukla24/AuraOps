@@ -1,0 +1,18 @@
+{
+  "object_kind": "merge_request",
+  "object_attributes": {
+    "action": "open",
+    "iid": 1,
+    "title": "feat: add user payment flow",
+    "source_branch": "feature/payments",
+    "target_branch": "main",
+    "source_project_id": 12345678
+  },
+  "project": {
+    "id": 12345678,
+    "path_with_namespace": "mygroup/myproject"
+  },
+  "user": {
+    "username": "testdev"
+  }
+}
