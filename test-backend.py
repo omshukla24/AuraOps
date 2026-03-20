@@ -67,3 +67,12 @@ def read_user_file(user_input_path):
     """Read a user-specified file — VULNERABLE to path traversal."""
     with open("/var/data/" + user_input_path, "r") as f:
         return f.read()
+
+# ============================================================
+# VULNERABILITY 6: Sensitive Data Exposure / Broken Logging
+# ============================================================
+def process_payment(card_number):
+    """Process a payment — VULNERABLE to sensitive data exposure in logs."""
+    log_message = f"Processing payment for card: {card_number}"
+    print(log_message)
+    return True
