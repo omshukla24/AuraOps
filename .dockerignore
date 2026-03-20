@@ -1,0 +1,12 @@
+.env
+__pycache__
+*.pyc
+.git
+.gitignore
+README.md
+*.md
+logs/
+dashboard-ui/node_modules/
+dashboard-ui/.vite/
+.vscode/
+.idea/
