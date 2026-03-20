@@ -1,0 +1,34 @@
+image: docker:24.0.5
+
+services:
+  - docker:24.0.5-dind
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+
+stages:
+  - build
+  - deploy
+
+build_image:
+  stage: build
+  script:
+    # Build the multi-stage Docker image
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
+    # Note: In a real environment, you'd log in and push to the registry here
+    # - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    # - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+  only:
+    - main
+    - merge_requests
+
+# (Optional Phase) If AuraOps approves the MR, deploy to staging/prod
+# For AuraOps itself, the backend is continuously running on Cloud Run.
+# The code below is a placeholder for how the target app would be deployed.
+deploy_prod:
+  stage: deploy
+  script:
+    - echo "Deploying approved application..."
+  only:
+    - main
