@@ -11,9 +11,9 @@ export default function App() {
         <p className="text-[10px] tracking-[2px] text-cyan-700/50 mt-1 uppercase" style={{ fontFamily: "'Space Grotesk','Inter',sans-serif" }}>Autonomous Unified Release Authority for Operations</p>
       </div>
 
-      <Canvas camera={{ position: [0, 0, 12], fov: 55 }} gl={{ antialias: true }}>
+      <Canvas camera={{ position: [0, 0, 30], fov: 45 }} gl={{ antialias: true }}>
         <AuraUniverse />
-        <OrbitControls enableDamping dampingFactor={0.06} enableZoom enablePan maxDistance={60} minDistance={6} />
+        <OrbitControls makeDefault enablePan={true} enableZoom={true} enableRotate={true} />
       </Canvas>
 
       <style>{`@keyframes pulse { 0%,100% { opacity: 0.35; } 50% { opacity: 0.8; } }`}</style>
