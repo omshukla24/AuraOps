@@ -11,9 +11,12 @@ __pycache__/
 venv/
 env/
 *.egg-info/
-dist/
 build/
 *.egg
+
+# Node / Frontend
+dashboard-ui/node_modules/
+dashboard-ui/.vite/
 
 # IDE
 .idea/

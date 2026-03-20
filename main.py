@@ -125,8 +125,8 @@ DEMO_MODE = False
 
 app = FastAPI(title="AuraOps", version="1.0.0")
 
-# Mount dashboard static files
-DASHBOARD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard")
+# Mount React dashboard build output
+DASHBOARD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard-ui", "dist")
 
 
 @app.get("/", response_class=JSONResponse)
@@ -135,21 +135,28 @@ async def health():
     return {
         "status": "ok",
         "service": "AuraOps",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "tagline": "The AI that decides if your code deserves to ship.",
         "agents": ["SecurityAgent", "GreenOpsAgent", "ValidationAgent",
                     "RiskEngine", "ComplianceAgent", "DeployAgent"],
+        "dashboard": "/dashboard",
     }
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard():
-    """Serve the AuraOps dashboard."""
+    """Serve the AuraOps React dashboard."""
     html_path = os.path.join(DASHBOARD_DIR, "index.html")
     if os.path.exists(html_path):
         with open(html_path, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
-    return HTMLResponse(content="<h1>Dashboard not found</h1>", status_code=404)
+    return HTMLResponse(content="<h1>Dashboard not built. Run: cd dashboard-ui && npm run build</h1>", status_code=404)
+
+
+# Serve static assets from the React build
+from starlette.staticfiles import StaticFiles as _StaticFiles
+if os.path.exists(os.path.join(DASHBOARD_DIR, "assets")):
+    app.mount("/assets", _StaticFiles(directory=os.path.join(DASHBOARD_DIR, "assets")), name="static-assets")
 
 
 @app.get("/api/history", response_class=JSONResponse)

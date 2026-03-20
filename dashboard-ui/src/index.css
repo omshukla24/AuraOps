@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+/* ── Custom Theme Variables ── */
+:root {
+  --bg-void: #050510;
+  --bg-glass: rgba(15, 20, 40, 0.6);
+  --border-glow: rgba(0, 240, 255, 0.15);
+  --border-subtle: rgba(100, 120, 160, 0.12);
+  --cyan: #00f0ff;
+  --cyan-glow: rgba(0, 240, 255, 0.3);
+  --violet: #9d05ff;
+  --emerald: #50ffb0;
+  --coral: #f97066;
+  --amber: #f59e0b;
+}
+
+/* ── Base Styles ── */
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-void);
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: #e0e8f0;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 40%, rgba(107, 33, 168, 0.12) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 60%, rgba(124, 58, 237, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 30%, rgba(0, 240, 255, 0.04) 0%, transparent 40%),
+    radial-gradient(ellipse at 20% 80%, rgba(76, 29, 149, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── Glass Panel Utility ── */
+.glass-panel {
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-glow);
+  border-radius: 12px;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.4), 0 0 15px rgba(0, 240, 255, 0.03);
+  transition: all 0.3s ease;
+}
+
+.glass-panel:hover {
+  border-color: rgba(0, 240, 255, 0.25);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 240, 255, 0.06);
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(100, 120, 160, 0.2); border-radius: 4px; }
+
+/* ── Animations ── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes nodePulse {
+  0%, 100% { box-shadow: 0 0 8px var(--cyan-glow); }
+  50% { box-shadow: 0 0 24px var(--cyan-glow); }
+}
