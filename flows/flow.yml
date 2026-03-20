@@ -1,0 +1,41 @@
+name: "AuraOps Auto-Remediator"
+description: "A flow that automatically attempts to patch vulnerabilities identified by the AuraOps engine."
+public: true
+
+definition:
+  version: v1
+  environment: ambient
+  
+  components:
+    - name: "remediator"
+      type: AgentComponent
+      prompt_id: "remediation_prompt"
+      inputs:
+        - "context:goal"
+      toolset:
+        - "get_merge_request"
+        - "create_merge_request_note"
+        - "read_file"
+
+  prompts:
+    - prompt_id: "remediation_prompt"
+      name: "Remediation Agent Prompt"
+      prompt_template:
+        system: |
+          You are the AuraOps Auto-Remediation Agent. When triggered, you must read the current Merge Request and analyze the AuraOps pipeline failure logs. 
+          
+          Your objective is to:
+          1. Identify the exact file and lines causing the security vulnerability or efficiency issue.
+          2. Generate the precise, robust code snippet needed to patch it.
+          3. Add this patch as a new comment on the Merge Request using the `create_merge_request_note` tool.
+        user: |
+          {{goal}}
+      params:
+        timeout: 180
+
+  routers:
+    - from: "remediator"
+      to: "end"
+
+  flow:
+    entry_point: "remediator"
