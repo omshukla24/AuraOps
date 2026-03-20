@@ -1505,12 +1505,13 @@ def format_scorecard(ctx: dict, elapsed: int) -> str:
                 t_parts.append(f"RiskEngine: {timings['risk']}s")
             if "phase3" in timings:
                 t_parts.append(f"Phase 3: {timings['phase3']}s")
-            lines.append(f"- ⏱️ {' \u00b7 '.join(t_parts)} \u00b7 **Total: {elapsed}s**")
+            dot = '\u00b7'
+            lines.append(f"- ⏱️ {f' {dot} '.join(t_parts)} {dot} **Total: {elapsed}s**")
         if token_cost:
             total_tokens = token_cost.get('total_tokens', 0)
             est_cost = token_cost.get('estimated_cost', 0)
             calls = token_cost.get('calls', 0)
-            lines.append(f"- 🪧 {total_tokens:,} tokens ({calls} API calls) \u00b7 est. cost: ${est_cost}")
+            lines.append(f"- 🪧 {total_tokens:,} tokens ({calls} API calls) · est. cost: ${est_cost}")
         lines.append("")
         lines.append("---")
         lines.append("")
