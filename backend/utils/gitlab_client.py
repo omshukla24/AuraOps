@@ -21,6 +21,16 @@ def get_mr_diff(project_id: int, mr_iid: int) -> str:
             return ""
         data = resp.json()
         changes = data.get("changes", [])
+        
+        # GitLab race condition: diff changes might be empty immediately after MR open
+        if not changes:
+            import time
+            log("  get_mr_diff: changes empty, retrying in 3 seconds...")
+            time.sleep(3)
+            resp = requests.get(url, headers=HEADERS, timeout=30)
+            data = resp.json() if resp.status_code == 200 else {}
+            changes = data.get("changes", [])
+
         diff_parts = []
         for change in changes:
             diff_parts.append(f"--- a/{change.get('old_path', '')}")
