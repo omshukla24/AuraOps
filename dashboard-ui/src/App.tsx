@@ -61,9 +61,6 @@ export default function App() {
               {TOUR_NODES[tourIndex].icon || '⚙️'}
             </div>
             <div>
-              <div style={{ color: '#06B6D4', fontSize: '11px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', fontFamily: "'Inter', sans-serif", marginBottom: '2px' }}>
-                Step {tourIndex + 1} of {TOUR_NODES.length}
-              </div>
               <h2 style={{ color: '#fff', margin: 0, fontSize: '20px', fontWeight: 600, fontFamily: "'Inter', sans-serif" }}>
                 {TOUR_NODES[tourIndex].label}
               </h2>
