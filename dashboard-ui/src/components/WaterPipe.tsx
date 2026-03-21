@@ -43,6 +43,7 @@ export default function WaterPipe({ points, progressRef, startAt, endAt, color }
       opacity={0} // dynamically set in useFrame
       dashed={true}
       dashSize={length}
+      gapSize={length} // Prevents repeating dashes from rendering the entire line prematurely
       dashScale={1}
       dashOffset={length} // Initial state fully hidden
     />
