@@ -176,6 +176,11 @@ export default function AuraUniverse({ tourIndex }: { tourIndex: number }) {
       
       // Fly to node pos, looking perfectly backwards
       cameraControlsRef.current.setLookAt(finalX, ty, tz + 15, finalX, ty, tz, true);
+      
+      // Auto-expand branches for the currently focused tour node
+      if (flowState !== 'DRAWING_PIPES') {
+        setExpandedBubbles(targetNode.branches?.map(b => b.id) || []);
+      }
     }
   }, [tourIndex, flowState]);
 
