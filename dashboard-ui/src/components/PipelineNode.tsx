@@ -25,14 +25,15 @@ interface Props {
   onTriggerClick?: () => void;
   showClickHint?: boolean;
   isScorecard?: boolean;
+  isProcessing?: boolean;
 }
 
 export default function PipelineNode({
   label, sublabel, position, color, isTrigger, isVisible,
-  branches, expandedBubbles, onToggleBubble, onTriggerClick, showClickHint, isScorecard,
+  branches, expandedBubbles, onToggleBubble, onTriggerClick, showClickHint, isScorecard, isProcessing
 }: Props) {
   const meshRef = useRef<THREE.Group>(null);
-  const glowRef = useRef<THREE.Mesh>(null);
+  const fluidMatRef = useRef<any>(null);
   const meteorRef = useRef<THREE.Group>(null);
   const scaleVal = useRef(isTrigger ? 1 : 0);
   const [hovered, setHovered] = useState(false);
@@ -54,9 +55,13 @@ export default function PipelineNode({
     
     if (meshRef.current) meshRef.current.scale.setScalar(Math.max(0.001, scaleVal.current));
     
-    if (glowRef.current) {
-      const m = glowRef.current.material as THREE.MeshBasicMaterial;
-      m.opacity = scaleVal.current * (0.06 + Math.sin(clock.getElapsedTime() * 1.5) * 0.03);
+    if (fluidMatRef.current && isVisible) {
+      if (isProcessing) {
+        const pulse = 0.5 + Math.abs(Math.sin(clock.getElapsedTime() * 4)) * 1.5;
+        fluidMatRef.current.emissiveIntensity = hovered ? 2.5 : pulse;
+      } else {
+        fluidMatRef.current.emissiveIntensity = hovered ? 1.5 : 0.8;
+      }
     }
     if (meteorRef.current && isVisible) {
       meteorRef.current.rotation.y += dt * 0.8;
@@ -74,7 +79,7 @@ export default function PipelineNode({
           {/* Jelly Fluid Sphere */}
           <mesh>
             <sphereGeometry args={[r * 0.8, 32, 32]} />
-            <MeshDistortMaterial color={col} emissive={col} emissiveIntensity={hovered ? 1.5 : 0.8} distort={0.5} speed={3} roughness={0.2} transparent opacity={scaleVal.current} />
+            <MeshDistortMaterial ref={fluidMatRef} color={col} emissive={col} emissiveIntensity={0.8} distort={0.5} speed={3} roughness={0.2} transparent opacity={scaleVal.current} />
           </mesh>
           {/* Glass Trapping Box */}
           <RoundedBox args={[r * 2.2, r * 2.2, r * 2.2]} radius={0.1} smoothness={4}>
@@ -95,11 +100,7 @@ export default function PipelineNode({
         </group>
       )}
 
-      <Float speed={1} rotationIntensity={0.1} floatIntensity={0.2} floatingRange={[-0.05, 0.05]}>
-        <mesh ref={glowRef}><sphereGeometry args={[r * 2, 32, 32]} /><meshBasicMaterial color={col} transparent opacity={0.04} side={THREE.BackSide} /></mesh>
-      </Float>
-      
-      {isVisible && <pointLight color={color} intensity={1} distance={8} decay={2} />}
+
 
       {isVisible && !isScorecard && (
         <Html position={[0, -(r + 0.8), 0]} center distanceFactor={15} style={{ pointerEvents: 'none' }}>

@@ -226,6 +226,8 @@ export default function AuraUniverse({ tourIndex, onTourIndexChange }: { tourInd
     }
   }, [tourIndex, flowState]);
 
+  const isProcessing = flowState === 'DRAWING_PIPES';
+
   return (
     <>
       <CameraControls ref={cameraControlsRef} makeDefault />
@@ -267,6 +269,7 @@ export default function AuraUniverse({ tourIndex, onTourIndexChange }: { tourInd
             isTrigger={n.isTrigger}
             isScorecard={n.isScorecard}
             isVisible={litNodes.has(n.id)}
+            isProcessing={isProcessing}
             branches={n.branches}
             expandedBubbles={expandedBubbles}
             onToggleBubble={toggleBubble}
