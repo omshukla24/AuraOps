@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Stars, CameraControls } from '@react-three/drei';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import WaterPipe from './WaterPipe';
 import PipelineNode, { type SubBranch } from './PipelineNode';
@@ -274,6 +275,10 @@ export default function AuraUniverse({ tourIndex, onTourIndexChange }: { tourInd
           />
         ))}
       </group>
+
+      <EffectComposer>
+        <Bloom luminanceThreshold={0.5} luminanceSmoothing={0.9} height={300} intensity={1.5} />
+      </EffectComposer>
     </>
   );
 }

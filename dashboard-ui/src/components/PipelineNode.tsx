@@ -1,6 +1,6 @@
 import { useRef, useState, useMemo } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
-import { Html, RoundedBox, MeshDistortMaterial, MeshTransmissionMaterial } from '@react-three/drei';
+import { Html, RoundedBox, MeshDistortMaterial, MeshTransmissionMaterial, Float } from '@react-three/drei';
 import * as THREE from 'three';
 
 export interface SubBranch {
@@ -69,17 +69,19 @@ export default function PipelineNode({
 
   return (
     <group position={position}>
-      <group ref={meshRef} onClick={click} onPointerOver={() => setHovered(true)} onPointerOut={() => setHovered(false)}>
-        {/* Jelly Fluid Sphere */}
-        <mesh>
-          <sphereGeometry args={[r * 0.8, 32, 32]} />
-          <MeshDistortMaterial color={col} emissive={col} emissiveIntensity={hovered ? 1 : 0.5} distort={0.5} speed={3} roughness={0.2} transparent opacity={scaleVal.current} />
-        </mesh>
-        {/* Glass Trapping Box */}
-        <RoundedBox args={[r * 2.2, r * 2.2, r * 2.2]} radius={0.1} smoothness={4}>
-          <MeshTransmissionMaterial color={col} transmission={0.9} opacity={1} transparent thickness={0.5} roughness={0.1} />
-        </RoundedBox>
-      </group>
+      <Float speed={1.5} rotationIntensity={0.6} floatIntensity={0.8} floatingRange={[-0.15, 0.15]}>
+        <group ref={meshRef} onClick={click} onPointerOver={() => setHovered(true)} onPointerOut={() => setHovered(false)}>
+          {/* Jelly Fluid Sphere */}
+          <mesh>
+            <sphereGeometry args={[r * 0.8, 32, 32]} />
+            <MeshDistortMaterial color={col} emissive={col} emissiveIntensity={hovered ? 2.5 : 1.2} distort={0.5} speed={3} roughness={0.2} transparent opacity={scaleVal.current} />
+          </mesh>
+          {/* Glass Trapping Box */}
+          <RoundedBox args={[r * 2.2, r * 2.2, r * 2.2]} radius={0.1} smoothness={4}>
+            <MeshTransmissionMaterial color={col} transmission={0.9} opacity={1} transparent thickness={0.5} roughness={0.1} />
+          </RoundedBox>
+        </group>
+      </Float>
       
       {/* Meteor Rings */}
       {isTrigger && isVisible && (
@@ -87,27 +89,31 @@ export default function PipelineNode({
           {meteors.map((m, i) => (
             <mesh key={i} position={m.pos}>
               <dodecahedronGeometry args={[m.scale]} />
-              <meshStandardMaterial color={col} emissive={col} emissiveIntensity={1.5} roughness={0.4} />
+              <meshStandardMaterial color={col} emissive={col} emissiveIntensity={2.5} roughness={0.4} />
             </mesh>
           ))}
         </group>
       )}
 
-      <mesh ref={glowRef}><sphereGeometry args={[r * 2, 32, 32]} /><meshBasicMaterial color={col} transparent opacity={0.04} side={THREE.BackSide} /></mesh>
-      {isVisible && <pointLight color={color} intensity={0.6} distance={6} decay={2} />}
+      <Float speed={1} rotationIntensity={0.1} floatIntensity={0.2} floatingRange={[-0.05, 0.05]}>
+        <mesh ref={glowRef}><sphereGeometry args={[r * 2, 32, 32]} /><meshBasicMaterial color={col} transparent opacity={0.04} side={THREE.BackSide} /></mesh>
+      </Float>
+      
+      {isVisible && <pointLight color={color} intensity={1} distance={8} decay={2} />}
 
       {isVisible && !isScorecard && (
         <Html position={[0, -(r + 0.8), 0]} center distanceFactor={15} style={{ pointerEvents: 'none' }}>
-          <div style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '0.5vw 1vw', textAlign: 'center', fontFamily: "'Inter',sans-serif", whiteSpace: 'nowrap' }}>
-            <div style={{ color: '#fff', fontSize: 'clamp(14px, 1.2vw, 24px)', fontWeight: 700 }}>{label}</div>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(11px, 0.9vw, 18px)' }}>{sublabel}</div>
+          <div style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(12px)', border: `1px solid ${color}40`, borderRadius: '8px', padding: '0.5vw 1vw', textAlign: 'center', fontFamily: "'Inter',sans-serif", whiteSpace: 'nowrap', boxShadow: `0 0 15px ${color}30` }}>
+            <div style={{ color: '#fff', fontSize: 'clamp(14px, 1.2vw, 24px)', fontWeight: 700, textShadow: `0 0 8px ${color}80` }}>{label}</div>
+            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(11px, 0.9vw, 18px)' }}>{sublabel}</div>
           </div>
         </Html>
       )}
 
       {isTrigger && showClickHint && (
         <Html position={[0, -2.5, 0]} center distanceFactor={15}>
-          <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 'clamp(12px, 1vw, 20px)', letterSpacing: '2px', fontFamily: "'Inter',sans-serif", animation: 'pulse 2s infinite', whiteSpace: 'nowrap' }}>CLICK TO BEGIN ANALYSIS</div>
+          <div style={{ color: '#22d3ee', fontSize: 'clamp(12px, 1vw, 20px)', letterSpacing: '2px', fontWeight: 600, fontFamily: "'Inter',sans-serif", animation: 'pulse-glow 2s infinite', whiteSpace: 'nowrap', textShadow: '0 0 10px #22d3ee, 0 0 20px #06b6d4' }}>CLICK TO RECORD EVENT</div>
+          <style>{`@keyframes pulse-glow { 0%, 100% { opacity: 0.4; text-shadow: 0 0 5px #22d3ee; } 50% { opacity: 1; text-shadow: 0 0 15px #22d3ee, 0 0 30px #06b6d4; } }`}</style>
         </Html>
       )}
 
@@ -116,15 +122,17 @@ export default function PipelineNode({
         const off = isExp ? b.expanded : b.dormant;
         return (
           <group key={b.id}>
-            <mesh position={off} onClick={(e) => { e.stopPropagation(); onToggleBubble(b.id); }} onPointerOver={() => { document.body.style.cursor = 'pointer'; }} onPointerOut={() => { document.body.style.cursor = 'auto'; }}>
-              <sphereGeometry args={[isExp ? 0.6 : 0.2, 32, 32]} />
-              <meshStandardMaterial color={color} emissive={color} emissiveIntensity={isExp ? 1.5 : 0.4} roughness={0.2} metalness={0.7} />
-            </mesh>
+            <Float speed={2} rotationIntensity={0.3} floatIntensity={0.5} floatingRange={[-0.08, 0.08]}>
+              <mesh position={off} onClick={(e) => { e.stopPropagation(); onToggleBubble(b.id); }} onPointerOver={() => { document.body.style.cursor = 'pointer'; }} onPointerOut={() => { document.body.style.cursor = 'auto'; }}>
+                <sphereGeometry args={[isExp ? 0.6 : 0.2, 32, 32]} />
+                <meshStandardMaterial color={color} emissive={color} emissiveIntensity={isExp ? 3.0 : 0.8} roughness={0.2} metalness={0.7} />
+              </mesh>
+            </Float>
             {isExp && (
               <Html position={[off[0], off[1] + 1.2, off[2]]} center distanceFactor={15} style={{ pointerEvents: 'none' }}>
-                <div style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', boxShadow: '0 0 20px rgba(0,255,255,0.08)', padding: '0.6vw 1vw', fontFamily: "'Inter',sans-serif", minWidth: 'clamp(120px, 10vw, 200px)', whiteSpace: 'nowrap' }}>
-                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(10px, 0.8vw, 16px)', letterSpacing: '1px', textTransform: 'uppercase' }}>{b.label}</div>
-                  <div style={{ color, fontSize: 'clamp(15px, 1.2vw, 24px)', fontWeight: 700, marginTop: '2px' }}>{b.value}</div>
+                <div style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(16px)', border: `1px solid ${color}50`, borderRadius: '10px', boxShadow: `0 0 25px ${color}30`, padding: '0.6vw 1vw', fontFamily: "'Inter',sans-serif", minWidth: 'clamp(120px, 10vw, 200px)', whiteSpace: 'nowrap' }}>
+                  <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(10px, 0.8vw, 16px)', letterSpacing: '1px', textTransform: 'uppercase' }}>{b.label}</div>
+                  <div style={{ color, fontSize: 'clamp(15px, 1.2vw, 24px)', fontWeight: 700, marginTop: '2px', textShadow: `0 0 10px ${color}` }}>{b.value}</div>
                 </div>
               </Html>
             )}

@@ -43,8 +43,8 @@ export default function App() {
   return (
     <div className="w-screen h-screen overflow-hidden relative bg-black">
       <div className="absolute top-4 left-4 md:top-6 md:left-6 z-10 pointer-events-none">
-        <h1 className="text-xl md:text-2xl font-bold tracking-[4px] bg-gradient-to-r from-cyan-400 to-cyan-100 bg-clip-text text-transparent font-['Space_Grotesk','Inter',sans-serif]">AuraOps</h1>
-        <p className="text-[8px] md:text-[10px] tracking-[2px] text-cyan-700/50 mt-1 uppercase font-['Space_Grotesk','Inter',sans-serif] hidden sm:block">Autonomous Unified Release Authority for Operations</p>
+        <h1 className="text-xl md:text-3xl font-bold tracking-[6px] text-white font-['Space_Grotesk','Inter',sans-serif] drop-shadow-[0_0_15px_rgba(6,182,212,1)]" style={{ textShadow: '0 0 10px #06b6d4, 0 0 20px #06b6d4, 0 0 40px #22d3ee' }}>AURAOPS</h1>
+        <p className="text-[8px] md:text-[10px] tracking-[2px] text-cyan-300 mt-1 uppercase font-['Space_Grotesk','Inter',sans-serif] hidden sm:block drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]">Autonomous Unified Release Authority for Operations</p>
       </div>
 
       <Canvas camera={{ position: [0, 0, 30], fov: 45 }} gl={{ antialias: true }}>
@@ -53,11 +53,11 @@ export default function App() {
 
       {/* Detailed Process Window Overlay Escaping 3D Projection */}
       <div className="absolute bottom-4 left-4 right-4 md:bottom-8 md:left-8 md:right-auto md:w-[28rem] pointer-events-auto z-[1000]">
-        <div className="bg-gradient-to-br from-slate-900/30 to-black/40 backdrop-blur-xl p-4 md:p-6 rounded-2xl border border-white/10 flex flex-col gap-3 md:gap-5 shadow-[0_8px_32px_0_rgba(0,255,255,0.05)] max-h-[45vh] md:max-h-none">
+        <div className="bg-gradient-to-br from-slate-900/30 to-black/40 backdrop-blur-xl p-4 md:p-6 rounded-2xl border flex flex-col gap-3 md:gap-5 max-h-[45vh] md:max-h-none animate-[border-glow_4s_ease-in-out_infinite]">
           
           {/* Header */}
           <div className="flex items-center gap-3">
-            <div className="text-xl md:text-2xl bg-white/10 backdrop-blur-sm w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg border border-white/5 shrink-0">
+            <div className="text-xl md:text-2xl bg-white/10 backdrop-blur-sm w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg border border-white/5 shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
               {TOUR_NODES[tourIndex].icon || '⚙️'}
             </div>
             <div className="min-w-0">
@@ -80,13 +80,13 @@ export default function App() {
             <button 
               onClick={handleBack} 
               disabled={tourIndex === 0} 
-              style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: tourIndex === 0 ? '#475569' : '#fff', cursor: tourIndex === 0 ? 'default' : 'pointer', border: 'none', fontSize: '13px', fontWeight: 600, fontFamily: "'Inter', sans-serif", transition: 'all 0.2s' }}>
+              style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: tourIndex === 0 ? '#475569' : '#fff', cursor: tourIndex === 0 ? 'default' : 'pointer', border: '1px solid rgba(255,255,255,0.1)', fontSize: '13px', fontWeight: 600, fontFamily: "'Inter', sans-serif", transition: 'all 0.3s ease', boxShadow: tourIndex === 0 ? 'none' : 'inset 0 0 10px rgba(255,255,255,0.05)' }}>
               &larr; PREV
             </button>
             <button 
               onClick={handleNext} 
               disabled={tourIndex === TOUR_NODES.length - 1} 
-              style={{ flex: 1, padding: '12px', borderRadius: '8px', background: tourIndex === TOUR_NODES.length - 1 ? 'rgba(255,255,255,0.05)' : '#06B6D4', color: tourIndex === TOUR_NODES.length - 1 ? '#475569' : '#000', cursor: tourIndex === TOUR_NODES.length - 1 ? 'default' : 'pointer', border: 'none', fontSize: '13px', fontWeight: 700, fontFamily: "'Inter', sans-serif", transition: 'all 0.2s' }}>
+              style={{ flex: 1, padding: '12px', borderRadius: '8px', background: tourIndex === TOUR_NODES.length - 1 ? 'rgba(255,255,255,0.05)' : '#06B6D4', color: tourIndex === TOUR_NODES.length - 1 ? '#475569' : '#000', cursor: tourIndex === TOUR_NODES.length - 1 ? 'default' : 'pointer', border: '1px solid rgba(255,255,255,0.1)', fontSize: '13px', fontWeight: 700, fontFamily: "'Inter', sans-serif", transition: 'all 0.3s ease', boxShadow: tourIndex === TOUR_NODES.length - 1 ? 'none' : '0 0 15px rgba(6,182,212,0.6), inset 0 0 10px rgba(255,255,255,0.4)', textShadow: tourIndex === TOUR_NODES.length - 1 ? 'none' : '0 0 5px rgba(255,255,255,0.5)' }}>
               NEXT &rarr;
             </button>
           </div>
@@ -97,6 +97,7 @@ export default function App() {
       <style>{`
         @keyframes pulse { 0%,100% { opacity: 0.35; } 50% { opacity: 0.8; } }
         @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+        @keyframes border-glow { 0%, 100% { box-shadow: 0 0 15px rgba(6, 182, 212, 0.1); border-color: rgba(255, 255, 255, 0.05); } 50% { box-shadow: 0 0 40px rgba(6, 182, 212, 0.4); border-color: rgba(34, 211, 238, 0.3); } }
       `}</style>
     </div>
   );
