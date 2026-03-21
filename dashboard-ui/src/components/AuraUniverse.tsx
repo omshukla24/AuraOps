@@ -174,8 +174,12 @@ export default function AuraUniverse({ tourIndex }: { tourIndex: number }) {
       const [tx, ty, tz] = targetNode.pos;
       const finalX = flowState === 'IDLE' ? tx + 15 : tx;
       
+      // On mobile, lower the camera so the node appears higher up, avoiding the bottom UI overlay
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+      const camY = isMobile ? ty - 6 : ty;
+      
       // Fly to node pos, looking perfectly backwards
-      cameraControlsRef.current.setLookAt(finalX, ty, tz + 15, finalX, ty, tz, true);
+      cameraControlsRef.current.setLookAt(finalX, camY, tz + 15, finalX, camY, tz, true);
       
       // Auto-expand branches for the currently focused tour node
       if (flowState !== 'DRAWING_PIPES') {

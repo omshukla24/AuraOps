@@ -25,10 +25,10 @@ function TypewriterTerminal({ logs, tourIndex }: { logs: string[], tourIndex: nu
   }, [logs, tourIndex]);
 
   return (
-    <div style={{ background: '#020617', padding: '16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.02)', display: 'flex', flexDirection: 'column', fontFamily: "'Fira Code', 'Courier New', monospace", fontSize: '13px', color: '#10b981', minHeight: '180px', whiteSpace: 'pre-wrap' }}>
-      <div style={{ opacity: 0.9, lineHeight: '1.6' }}>
+    <div className="bg-[#020617] p-3 md:p-4 rounded-lg border border-white/5 flex flex-col font-mono text-[11px] md:text-[13px] text-emerald-400 min-h-[140px] md:min-h-[180px] whitespace-pre-wrap flex-1 overflow-y-auto">
+      <div className="opacity-90 leading-relaxed">
         {displayedText}
-        <span style={{ display: 'inline-block', width: '8px', height: '14px', background: '#10b981', marginLeft: '4px', verticalAlign: 'middle', animation: 'blink 1s step-end infinite' }}></span>
+        <span className="inline-block w-2 h-3.5 bg-emerald-400 ml-1 align-middle animate-[blink_1s_step-end_infinite]"></span>
       </div>
     </div>
   );
@@ -41,10 +41,10 @@ export default function App() {
   const handleBack = () => setTourIndex(i => Math.max(0, i - 1));
 
   return (
-    <div className="w-screen h-screen overflow-hidden relative" style={{ background: '#000000' }}>
-      <div className="absolute top-6 left-6 z-10 pointer-events-none">
-        <h1 className="text-2xl font-bold tracking-[4px] bg-gradient-to-r from-cyan-400 to-cyan-100 bg-clip-text text-transparent" style={{ fontFamily: "'Space Grotesk','Inter',sans-serif" }}>AuraOps</h1>
-        <p className="text-[10px] tracking-[2px] text-cyan-700/50 mt-1 uppercase" style={{ fontFamily: "'Space Grotesk','Inter',sans-serif" }}>Autonomous Unified Release Authority for Operations</p>
+    <div className="w-screen h-screen overflow-hidden relative bg-black">
+      <div className="absolute top-4 left-4 md:top-6 md:left-6 z-10 pointer-events-none">
+        <h1 className="text-xl md:text-2xl font-bold tracking-[4px] bg-gradient-to-r from-cyan-400 to-cyan-100 bg-clip-text text-transparent font-['Space_Grotesk','Inter',sans-serif]">AuraOps</h1>
+        <p className="text-[8px] md:text-[10px] tracking-[2px] text-cyan-700/50 mt-1 uppercase font-['Space_Grotesk','Inter',sans-serif] hidden sm:block">Autonomous Unified Release Authority for Operations</p>
       </div>
 
       <Canvas camera={{ position: [0, 0, 30], fov: 45 }} gl={{ antialias: true }}>
@@ -52,23 +52,23 @@ export default function App() {
       </Canvas>
 
       {/* Detailed Process Window Overlay Escaping 3D Projection */}
-      <div style={{ position: 'absolute', bottom: '2rem', left: '2rem', width: '28rem', pointerEvents: 'auto', zIndex: 1000 }}>
-        <div style={{ background: 'rgba(5, 8, 15, 0.85)', backdropFilter: 'blur(20px)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)' }}>
+      <div className="absolute bottom-4 left-4 right-4 md:bottom-8 md:left-8 md:right-auto md:w-[28rem] pointer-events-auto z-[1000]">
+        <div className="bg-[#05080f]/85 backdrop-blur-xl p-4 md:p-6 rounded-2xl border border-white/5 flex flex-col gap-3 md:gap-5 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.7)] max-h-[45vh] md:max-h-none">
           
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ fontSize: '24px', background: 'rgba(255,255,255,0.1)', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px' }}>
+          <div className="flex items-center gap-3">
+            <div className="text-xl md:text-2xl bg-white/10 w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg shrink-0">
               {TOUR_NODES[tourIndex].icon || '⚙️'}
             </div>
-            <div>
-              <h2 style={{ color: '#fff', margin: 0, fontSize: '20px', fontWeight: 600, fontFamily: "'Inter', sans-serif" }}>
+            <div className="min-w-0">
+              <h2 className="text-white m-0 text-base md:text-xl font-semibold font-['Inter',sans-serif] truncate">
                 {TOUR_NODES[tourIndex].label}
               </h2>
             </div>
           </div>
           
           {/* Description */}
-          <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: '1.6', margin: 0, fontFamily: "'Inter', sans-serif" }}>
+          <p className="text-slate-400 text-xs md:text-sm leading-relaxed m-0 font-['Inter',sans-serif] hidden sm:block">
             {TOUR_NODES[tourIndex].processDesc || "Processing metadata..."}
           </p>
           
