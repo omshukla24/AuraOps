@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useFrame } from '@react-three/fiber';
-import { Stars, CameraControls, Html } from '@react-three/drei';
+import { Stars, CameraControls } from '@react-three/drei';
 import * as THREE from 'three';
 import WaterPipe from './WaterPipe';
 import PipelineNode, { type SubBranch } from './PipelineNode';
@@ -205,22 +206,23 @@ export default function AuraUniverse() {
         ))}
       </group>
 
-      {/* 2D Cinematic Guided Tour Overlay */}
-      <Html fullscreen zIndexRange={[100, 0]} style={{ pointerEvents: 'none' }}>
-        <div style={{ position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)', pointerEvents: 'auto' }}>
+      {/* 2D Cinematic Guided Tour Overlay using React Portal to escape 3D camera projection */}
+      {createPortal(
+        <div style={{ position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)', pointerEvents: 'auto', zIndex: 1000 }}>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)', padding: '12px 24px', borderRadius: '99px', border: '1px solid rgba(255,255,255,0.1)' }}>
             <button onClick={handleBack} disabled={tourIndex === 0} style={{ color: tourIndex === 0 ? '#555' : '#fff', cursor: tourIndex === 0 ? 'default' : 'pointer', background: 'none', border: 'none', fontSize: '14px', fontWeight: 600 }}>
               &larr; BACK
             </button>
-            <div style={{ color: '#06B6D4', fontSize: '13px', fontWeight: 700, minWidth: '150px', textAlign: 'center', letterSpacing: '1px', textTransform: 'uppercase' }}>
+            <div style={{ color: '#06B6D4', fontSize: '13px', fontWeight: 700, minWidth: '150px', textAlign: 'center', letterSpacing: '1px', textTransform: 'uppercase', fontFamily: "'Inter', sans-serif" }}>
               {TOUR_NODES[tourIndex].label}
             </div>
             <button onClick={handleNext} disabled={tourIndex === TOUR_NODES.length - 1} style={{ color: tourIndex === TOUR_NODES.length - 1 ? '#555' : '#fff', cursor: tourIndex === TOUR_NODES.length - 1 ? 'default' : 'pointer', background: 'none', border: 'none', fontSize: '14px', fontWeight: 600 }}>
               NEXT &rarr;
             </button>
           </div>
-        </div>
-      </Html>
+        </div>,
+        document.body
+      )}
     </>
   );
 }
