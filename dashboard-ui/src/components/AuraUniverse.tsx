@@ -277,7 +277,7 @@ export default function AuraUniverse({ tourIndex, onTourIndexChange }: { tourInd
       </group>
 
       <EffectComposer>
-        <Bloom luminanceThreshold={0.5} luminanceSmoothing={0.9} height={300} intensity={1.5} />
+        <Bloom luminanceThreshold={0.6} luminanceSmoothing={0.9} height={300} intensity={0.8} />
       </EffectComposer>
     </>
   );

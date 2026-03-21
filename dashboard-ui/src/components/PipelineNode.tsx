@@ -74,7 +74,7 @@ export default function PipelineNode({
           {/* Jelly Fluid Sphere */}
           <mesh>
             <sphereGeometry args={[r * 0.8, 32, 32]} />
-            <MeshDistortMaterial color={col} emissive={col} emissiveIntensity={hovered ? 2.5 : 1.2} distort={0.5} speed={3} roughness={0.2} transparent opacity={scaleVal.current} />
+            <MeshDistortMaterial color={col} emissive={col} emissiveIntensity={hovered ? 1.5 : 0.8} distort={0.5} speed={3} roughness={0.2} transparent opacity={scaleVal.current} />
           </mesh>
           {/* Glass Trapping Box */}
           <RoundedBox args={[r * 2.2, r * 2.2, r * 2.2]} radius={0.1} smoothness={4}>
@@ -89,7 +89,7 @@ export default function PipelineNode({
           {meteors.map((m, i) => (
             <mesh key={i} position={m.pos}>
               <dodecahedronGeometry args={[m.scale]} />
-              <meshStandardMaterial color={col} emissive={col} emissiveIntensity={2.5} roughness={0.4} />
+              <meshStandardMaterial color={col} emissive={col} emissiveIntensity={1.5} roughness={0.4} />
             </mesh>
           ))}
         </group>
@@ -125,7 +125,7 @@ export default function PipelineNode({
             <Float speed={2} rotationIntensity={0.3} floatIntensity={0.5} floatingRange={[-0.08, 0.08]}>
               <mesh position={off} onClick={(e) => { e.stopPropagation(); onToggleBubble(b.id); }} onPointerOver={() => { document.body.style.cursor = 'pointer'; }} onPointerOut={() => { document.body.style.cursor = 'auto'; }}>
                 <sphereGeometry args={[isExp ? 0.6 : 0.2, 32, 32]} />
-                <meshStandardMaterial color={color} emissive={color} emissiveIntensity={isExp ? 3.0 : 0.8} roughness={0.2} metalness={0.7} />
+                <meshStandardMaterial color={color} emissive={color} emissiveIntensity={isExp ? 2.0 : 0.6} roughness={0.2} metalness={0.7} />
               </mesh>
             </Float>
             {isExp && (

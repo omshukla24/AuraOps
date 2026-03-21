@@ -43,8 +43,8 @@ export default function App() {
   return (
     <div className="w-screen h-screen overflow-hidden relative bg-black">
       <div className="absolute top-4 left-4 md:top-6 md:left-6 z-10 pointer-events-none">
-        <h1 className="text-xl md:text-3xl font-bold tracking-[6px] text-white font-['Space_Grotesk','Inter',sans-serif] drop-shadow-[0_0_15px_rgba(6,182,212,1)]" style={{ textShadow: '0 0 10px #06b6d4, 0 0 20px #06b6d4, 0 0 40px #22d3ee' }}>AURAOPS</h1>
-        <p className="text-[8px] md:text-[10px] tracking-[2px] text-cyan-300 mt-1 uppercase font-['Space_Grotesk','Inter',sans-serif] hidden sm:block drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]">Autonomous Unified Release Authority for Operations</p>
+        <h1 className="text-xl md:text-3xl font-bold tracking-[6px] text-white font-['Space_Grotesk','Inter',sans-serif] drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]" style={{ textShadow: '0 0 5px #06b6d4, 0 0 15px #06b6d4' }}>AURAOPS</h1>
+        <p className="text-[8px] md:text-[10px] tracking-[2px] text-cyan-300 mt-1 uppercase font-['Space_Grotesk','Inter',sans-serif] hidden sm:block drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]">Autonomous Unified Release Authority for Operations</p>
       </div>
 
       <Canvas camera={{ position: [0, 0, 30], fov: 45 }} gl={{ antialias: true }}>
@@ -97,7 +97,7 @@ export default function App() {
       <style>{`
         @keyframes pulse { 0%,100% { opacity: 0.35; } 50% { opacity: 0.8; } }
         @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
-        @keyframes border-glow { 0%, 100% { box-shadow: 0 0 15px rgba(6, 182, 212, 0.1); border-color: rgba(255, 255, 255, 0.05); } 50% { box-shadow: 0 0 40px rgba(6, 182, 212, 0.4); border-color: rgba(34, 211, 238, 0.3); } }
+        @keyframes border-glow { 0%, 100% { box-shadow: 0 0 10px rgba(6, 182, 212, 0.05); border-color: rgba(255, 255, 255, 0.05); } 50% { box-shadow: 0 0 25px rgba(6, 182, 212, 0.25); border-color: rgba(34, 211, 238, 0.2); } }
       `}</style>
     </div>
   );
