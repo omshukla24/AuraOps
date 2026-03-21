@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
 import AuraUniverse, { TOUR_NODES } from './components/AuraUniverse';
 import './index.css';
 
