@@ -20,18 +20,54 @@ export default function App() {
         <AuraUniverse tourIndex={tourIndex} />
       </Canvas>
 
-      {/* Persistent 2D Overlay Escaping 3D Projection */}
-      <div style={{ position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)', pointerEvents: 'auto', zIndex: 1000 }}>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)', padding: '12px 24px', borderRadius: '99px', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <button onClick={handleBack} disabled={tourIndex === 0} style={{ color: tourIndex === 0 ? '#555' : '#fff', cursor: tourIndex === 0 ? 'default' : 'pointer', background: 'none', border: 'none', fontSize: '14px', fontWeight: 600 }}>
-            &larr; BACK
-          </button>
-          <div style={{ color: '#06B6D4', fontSize: '13px', fontWeight: 700, minWidth: '150px', textAlign: 'center', letterSpacing: '1px', textTransform: 'uppercase', fontFamily: "'Inter', sans-serif" }}>
-            {TOUR_NODES[tourIndex].label}
+      {/* Detailed Process Window Overlay Escaping 3D Projection */}
+      <div style={{ position: 'absolute', bottom: '2rem', left: '2rem', width: '28rem', pointerEvents: 'auto', zIndex: 1000 }}>
+        <div style={{ background: 'rgba(5, 8, 15, 0.85)', backdropFilter: 'blur(20px)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)' }}>
+          
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ fontSize: '24px', background: 'rgba(255,255,255,0.1)', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px' }}>
+              {TOUR_NODES[tourIndex].icon || '⚙️'}
+            </div>
+            <div>
+              <div style={{ color: '#06B6D4', fontSize: '11px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', fontFamily: "'Inter', sans-serif", marginBottom: '2px' }}>
+                Step {tourIndex + 1} of {TOUR_NODES.length}
+              </div>
+              <h2 style={{ color: '#fff', margin: 0, fontSize: '20px', fontWeight: 600, fontFamily: "'Inter', sans-serif" }}>
+                {TOUR_NODES[tourIndex].label}
+              </h2>
+            </div>
           </div>
-          <button onClick={handleNext} disabled={tourIndex === TOUR_NODES.length - 1} style={{ color: tourIndex === TOUR_NODES.length - 1 ? '#555' : '#fff', cursor: tourIndex === TOUR_NODES.length - 1 ? 'default' : 'pointer', background: 'none', border: 'none', fontSize: '14px', fontWeight: 600 }}>
-            NEXT &rarr;
-          </button>
+          
+          {/* Description */}
+          <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: '1.6', margin: 0, fontFamily: "'Inter', sans-serif" }}>
+            {TOUR_NODES[tourIndex].processDesc || "Processing metadata..."}
+          </p>
+          
+          {/* Terminal / Logs */}
+          <div style={{ background: '#020617', padding: '16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.02)', display: 'flex', flexDirection: 'column', gap: '10px', fontFamily: "'Fira Code', 'Courier New', monospace", fontSize: '12px', color: '#10b981', minHeight: '140px' }}>
+            {TOUR_NODES[tourIndex].logs?.map((log, i) => (
+              <div key={i} style={{ opacity: 0.8 }}>{log}</div>
+            )) || <div>&gt; Awaiting data...</div>}
+            <div className="animate-pulse" style={{ width: '8px', height: '14px', background: '#10b981', marginTop: '4px' }}></div>
+          </div>
+
+          {/* Navigation */}
+          <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+            <button 
+              onClick={handleBack} 
+              disabled={tourIndex === 0} 
+              style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: tourIndex === 0 ? '#475569' : '#fff', cursor: tourIndex === 0 ? 'default' : 'pointer', border: 'none', fontSize: '13px', fontWeight: 600, fontFamily: "'Inter', sans-serif", transition: 'all 0.2s' }}>
+              &larr; PREV
+            </button>
+            <button 
+              onClick={handleNext} 
+              disabled={tourIndex === TOUR_NODES.length - 1} 
+              style={{ flex: 1, padding: '12px', borderRadius: '8px', background: tourIndex === TOUR_NODES.length - 1 ? 'rgba(255,255,255,0.05)' : '#06B6D4', color: tourIndex === TOUR_NODES.length - 1 ? '#475569' : '#000', cursor: tourIndex === TOUR_NODES.length - 1 ? 'default' : 'pointer', border: 'none', fontSize: '13px', fontWeight: 700, fontFamily: "'Inter', sans-serif", transition: 'all 0.2s' }}>
+              NEXT &rarr;
+            </button>
+          </div>
+          
         </div>
       </div>
 
