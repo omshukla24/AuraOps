@@ -25,7 +25,7 @@ function TypewriterTerminal({ logs, tourIndex }: { logs: string[], tourIndex: nu
   }, [logs, tourIndex]);
 
   return (
-    <div className="bg-[#020617] p-3 md:p-4 rounded-lg border border-white/5 flex flex-col font-mono text-[11px] md:text-[13px] text-emerald-400 min-h-[140px] md:min-h-[180px] whitespace-pre-wrap flex-1 overflow-y-auto">
+    <div className="bg-black/40 backdrop-blur-md p-3 md:p-4 rounded-lg border border-white/10 flex flex-col font-mono text-[11px] md:text-[13px] text-emerald-400 min-h-[140px] md:min-h-[180px] whitespace-pre-wrap flex-1 overflow-y-auto shadow-inner">
       <div className="opacity-90 leading-relaxed">
         {displayedText}
         <span className="inline-block w-2 h-3.5 bg-emerald-400 ml-1 align-middle animate-[blink_1s_step-end_infinite]"></span>
@@ -53,22 +53,22 @@ export default function App() {
 
       {/* Detailed Process Window Overlay Escaping 3D Projection */}
       <div className="absolute bottom-4 left-4 right-4 md:bottom-8 md:left-8 md:right-auto md:w-[28rem] pointer-events-auto z-[1000]">
-        <div className="bg-[#05080f]/85 backdrop-blur-xl p-4 md:p-6 rounded-2xl border border-white/5 flex flex-col gap-3 md:gap-5 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.7)] max-h-[45vh] md:max-h-none">
+        <div className="bg-gradient-to-br from-slate-900/30 to-black/40 backdrop-blur-xl p-4 md:p-6 rounded-2xl border border-white/10 flex flex-col gap-3 md:gap-5 shadow-[0_8px_32px_0_rgba(0,255,255,0.05)] max-h-[45vh] md:max-h-none">
           
           {/* Header */}
           <div className="flex items-center gap-3">
-            <div className="text-xl md:text-2xl bg-white/10 w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg shrink-0">
+            <div className="text-xl md:text-2xl bg-white/10 backdrop-blur-sm w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg border border-white/5 shrink-0">
               {TOUR_NODES[tourIndex].icon || '⚙️'}
             </div>
             <div className="min-w-0">
-              <h2 className="text-white m-0 text-base md:text-xl font-semibold font-['Inter',sans-serif] truncate">
+              <h2 className="text-white m-0 text-base md:text-xl font-semibold font-['Inter',sans-serif] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
                 {TOUR_NODES[tourIndex].label}
               </h2>
             </div>
           </div>
           
           {/* Description */}
-          <p className="text-slate-400 text-xs md:text-sm leading-relaxed m-0 font-['Inter',sans-serif] hidden sm:block">
+          <p className="text-slate-300 text-xs md:text-sm leading-relaxed m-0 font-['Inter',sans-serif] hidden sm:block drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
             {TOUR_NODES[tourIndex].processDesc || "Processing metadata..."}
           </p>
           
