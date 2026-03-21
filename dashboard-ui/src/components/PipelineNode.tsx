@@ -1,6 +1,6 @@
 import { useRef, useState, useMemo } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+import { Html, RoundedBox, MeshDistortMaterial, MeshTransmissionMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 
 export interface SubBranch {
@@ -31,20 +31,37 @@ export default function PipelineNode({
   label, sublabel, position, color, isTrigger, isVisible,
   branches, expandedBubbles, onToggleBubble, onTriggerClick, showClickHint, isScorecard,
 }: Props) {
-  const meshRef = useRef<THREE.Mesh>(null);
+  const meshRef = useRef<THREE.Group>(null);
   const glowRef = useRef<THREE.Mesh>(null);
+  const meteorRef = useRef<THREE.Group>(null);
   const scaleVal = useRef(isTrigger ? 1 : 0);
   const [hovered, setHovered] = useState(false);
   const col = useMemo(() => new THREE.Color(color), [color]);
   const r = isTrigger ? 0.5 : 0.45;
 
+  const meteors = useMemo(() => {
+    return Array.from({ length: 15 }).map((_, i) => {
+      const angle = (i / 15) * Math.PI * 2;
+      const dist = r * 3;
+      const yOff = Math.sin(angle * 3) * 0.3;
+      return { pos: [Math.cos(angle) * dist, yOff, Math.sin(angle) * dist] as [number, number, number], scale: 0.05 + Math.random() * 0.05 };
+    });
+  }, [r]);
+
   useFrame(({ clock }, dt) => {
     const target = isVisible ? 1 : 0;
     scaleVal.current += (target - scaleVal.current) * Math.min(1, 1.5 * dt);
+    
     if (meshRef.current) meshRef.current.scale.setScalar(Math.max(0.001, scaleVal.current));
+    
     if (glowRef.current) {
       const m = glowRef.current.material as THREE.MeshBasicMaterial;
       m.opacity = scaleVal.current * (0.06 + Math.sin(clock.getElapsedTime() * 1.5) * 0.03);
+    }
+    if (meteorRef.current && isVisible) {
+      meteorRef.current.rotation.y += dt * 0.8;
+      meteorRef.current.rotation.z = Math.sin(clock.getElapsedTime()) * 0.1;
+      meteorRef.current.rotation.x = Math.cos(clock.getElapsedTime() * 0.8) * 0.1;
     }
   });
 
@@ -52,10 +69,30 @@ export default function PipelineNode({
 
   return (
     <group position={position}>
-      <mesh ref={meshRef} onClick={click} onPointerOver={() => setHovered(true)} onPointerOut={() => setHovered(false)}>
-        <sphereGeometry args={[r, 48, 48]} />
-        <meshStandardMaterial color={col} emissive={col} emissiveIntensity={hovered ? 1.5 : 0.6} roughness={0.1} metalness={0.8} transparent opacity={scaleVal.current} />
-      </mesh>
+      <group ref={meshRef} onClick={click} onPointerOver={() => setHovered(true)} onPointerOut={() => setHovered(false)}>
+        {/* Jelly Fluid Sphere */}
+        <mesh>
+          <sphereGeometry args={[r * 0.8, 32, 32]} />
+          <MeshDistortMaterial color={col} emissive={col} emissiveIntensity={hovered ? 1 : 0.5} distort={0.5} speed={3} roughness={0.2} transparent opacity={scaleVal.current} />
+        </mesh>
+        {/* Glass Trapping Box */}
+        <RoundedBox args={[r * 2.2, r * 2.2, r * 2.2]} radius={0.1} smoothness={4}>
+          <MeshTransmissionMaterial color={col} transmission={0.9} opacity={1} transparent thickness={0.5} roughness={0.1} />
+        </RoundedBox>
+      </group>
+      
+      {/* Meteor Rings */}
+      {isTrigger && isVisible && (
+        <group ref={meteorRef}>
+          {meteors.map((m, i) => (
+            <mesh key={i} position={m.pos}>
+              <dodecahedronGeometry args={[m.scale]} />
+              <meshStandardMaterial color={col} emissive={col} emissiveIntensity={1.5} roughness={0.4} />
+            </mesh>
+          ))}
+        </group>
+      )}
+
       <mesh ref={glowRef}><sphereGeometry args={[r * 2, 32, 32]} /><meshBasicMaterial color={col} transparent opacity={0.04} side={THREE.BackSide} /></mesh>
       {isVisible && <pointLight color={color} intensity={0.6} distance={6} decay={2} />}
 
