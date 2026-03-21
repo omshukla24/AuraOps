@@ -1,5 +1,4 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { useFrame } from '@react-three/fiber';
 import { Stars, CameraControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -53,7 +52,7 @@ const NODES: NodeDef[] = [
   { id: 'scorecard', label: 'AuraOps Scorecard', sublabel: 'Release Complete', pos: [33, -2, 0], color: '#FBBf24', revealAt: 98, isScorecard: true, branches: [] },
 ];
 
-const TOUR_NODES = NODES; // Map exactly to the pipeline array sequence
+export const TOUR_NODES = NODES; // Map exactly to the pipeline array sequence
 
 // ═══════════════════════════════════════
 //  PIPE DEFINITIONS
@@ -79,14 +78,11 @@ const PIPES: PipeDef[] = [
 //  MAIN SCENE
 // ═══════════════════════════════════════
 
-export default function AuraUniverse() {
+export default function AuraUniverse({ tourIndex }: { tourIndex: number }) {
   const [flowState, setFlowState] = useState<FlowState>('IDLE');
   const pipeProgressRef = useRef(0); // 0 to 100
   const [litNodes, setLitNodes] = useState<Set<string>>(new Set(['trigger']));
   const [expandedBubbles, setExpandedBubbles] = useState<string[]>([]);
-  
-  // Guided Tour State
-  const [tourIndex, setTourIndex] = useState(0);
 
   const cameraControlsRef = useRef<CameraControls>(null);
   const groupRef = useRef<THREE.Group>(null);
@@ -138,6 +134,8 @@ export default function AuraUniverse() {
   useEffect(() => {
     if (cameraControlsRef.current) {
       const targetNode = TOUR_NODES[tourIndex];
+      if (!targetNode) return;
+      
       const [tx, ty, tz] = targetNode.pos;
       const finalX = flowState === 'IDLE' ? tx + 15 : tx;
       
@@ -145,16 +143,6 @@ export default function AuraUniverse() {
       cameraControlsRef.current.setLookAt(finalX, ty, tz + 15, finalX, ty, tz, true);
     }
   }, [tourIndex, flowState]);
-
-  const handleNext = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setTourIndex(i => Math.min(TOUR_NODES.length - 1, i + 1));
-  };
-  
-  const handleBack = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setTourIndex(i => Math.max(0, i - 1));
-  };
 
   return (
     <>
@@ -205,24 +193,6 @@ export default function AuraUniverse() {
           />
         ))}
       </group>
-
-      {/* 2D Cinematic Guided Tour Overlay using React Portal to escape 3D camera projection */}
-      {createPortal(
-        <div style={{ position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)', pointerEvents: 'auto', zIndex: 1000 }}>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)', padding: '12px 24px', borderRadius: '99px', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <button onClick={handleBack} disabled={tourIndex === 0} style={{ color: tourIndex === 0 ? '#555' : '#fff', cursor: tourIndex === 0 ? 'default' : 'pointer', background: 'none', border: 'none', fontSize: '14px', fontWeight: 600 }}>
-              &larr; BACK
-            </button>
-            <div style={{ color: '#06B6D4', fontSize: '13px', fontWeight: 700, minWidth: '150px', textAlign: 'center', letterSpacing: '1px', textTransform: 'uppercase', fontFamily: "'Inter', sans-serif" }}>
-              {TOUR_NODES[tourIndex].label}
-            </div>
-            <button onClick={handleNext} disabled={tourIndex === TOUR_NODES.length - 1} style={{ color: tourIndex === TOUR_NODES.length - 1 ? '#555' : '#fff', cursor: tourIndex === TOUR_NODES.length - 1 ? 'default' : 'pointer', background: 'none', border: 'none', fontSize: '14px', fontWeight: 600 }}>
-              NEXT &rarr;
-            </button>
-          </div>
-        </div>,
-        document.body
-      )}
     </>
   );
 }
