@@ -86,7 +86,6 @@ export default function AuraUniverse() {
   
   // Guided Tour State
   const [tourIndex, setTourIndex] = useState(0);
-  const [isTourActive, setIsTourActive] = useState(false);
 
   const cameraControlsRef = useRef<CameraControls>(null);
   const groupRef = useRef<THREE.Group>(null);
@@ -124,8 +123,6 @@ export default function AuraUniverse() {
       if (pipeProgressRef.current >= 100) {
         pipeProgressRef.current = 100;
         setFlowState('COMPLETE');
-        setIsTourActive(true);
-        setTourIndex(0); // Autostart tour at origin
       }
 
       const newLit = new Set(['trigger']);
@@ -138,13 +135,15 @@ export default function AuraUniverse() {
 
   // Cinematic Fly-To Animation
   useEffect(() => {
-    if (isTourActive && cameraControlsRef.current) {
+    if (cameraControlsRef.current) {
       const targetNode = TOUR_NODES[tourIndex];
       const [tx, ty, tz] = targetNode.pos;
+      const finalX = flowState === 'IDLE' ? tx + 15 : tx;
+      
       // Fly to node pos, looking perfectly backwards
-      cameraControlsRef.current.setLookAt(tx, ty, tz + 15, tx, ty, tz, true);
+      cameraControlsRef.current.setLookAt(finalX, ty, tz + 15, finalX, ty, tz, true);
     }
-  }, [tourIndex, isTourActive]);
+  }, [tourIndex, flowState]);
 
   const handleNext = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -207,23 +206,21 @@ export default function AuraUniverse() {
       </group>
 
       {/* 2D Cinematic Guided Tour Overlay */}
-      {isTourActive && (
-        <Html fullscreen zIndexRange={[100, 0]} style={{ pointerEvents: 'none' }}>
-          <div style={{ position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)', pointerEvents: 'auto' }}>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)', padding: '12px 24px', borderRadius: '99px', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <button onClick={handleBack} disabled={tourIndex === 0} style={{ color: tourIndex === 0 ? '#555' : '#fff', cursor: tourIndex === 0 ? 'default' : 'pointer', background: 'none', border: 'none', fontSize: '14px', fontWeight: 600 }}>
-                &larr; BACK
-              </button>
-              <div style={{ color: '#06B6D4', fontSize: '13px', fontWeight: 700, minWidth: '150px', textAlign: 'center', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                {TOUR_NODES[tourIndex].label}
-              </div>
-              <button onClick={handleNext} disabled={tourIndex === TOUR_NODES.length - 1} style={{ color: tourIndex === TOUR_NODES.length - 1 ? '#555' : '#fff', cursor: tourIndex === TOUR_NODES.length - 1 ? 'default' : 'pointer', background: 'none', border: 'none', fontSize: '14px', fontWeight: 600 }}>
-                NEXT &rarr;
-              </button>
+      <Html fullscreen zIndexRange={[100, 0]} style={{ pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)', pointerEvents: 'auto' }}>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)', padding: '12px 24px', borderRadius: '99px', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <button onClick={handleBack} disabled={tourIndex === 0} style={{ color: tourIndex === 0 ? '#555' : '#fff', cursor: tourIndex === 0 ? 'default' : 'pointer', background: 'none', border: 'none', fontSize: '14px', fontWeight: 600 }}>
+              &larr; BACK
+            </button>
+            <div style={{ color: '#06B6D4', fontSize: '13px', fontWeight: 700, minWidth: '150px', textAlign: 'center', letterSpacing: '1px', textTransform: 'uppercase' }}>
+              {TOUR_NODES[tourIndex].label}
             </div>
+            <button onClick={handleNext} disabled={tourIndex === TOUR_NODES.length - 1} style={{ color: tourIndex === TOUR_NODES.length - 1 ? '#555' : '#fff', cursor: tourIndex === TOUR_NODES.length - 1 ? 'default' : 'pointer', background: 'none', border: 'none', fontSize: '14px', fontWeight: 600 }}>
+              NEXT &rarr;
+            </button>
           </div>
-        </Html>
-      )}
+        </div>
+      </Html>
     </>
   );
 }
