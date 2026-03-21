@@ -113,7 +113,7 @@ const PIPES: PipeDef[] = [
 //  MAIN SCENE
 // ═══════════════════════════════════════
 
-export default function AuraUniverse({ tourIndex }: { tourIndex: number }) {
+export default function AuraUniverse({ tourIndex, onTourIndexChange }: { tourIndex: number, onTourIndexChange?: (i: number) => void }) {
   const [flowState, setFlowState] = useState<FlowState>('IDLE');
   const pipeProgressRef = useRef(0); // 0 to 100
   const [litNodes, setLitNodes] = useState<Set<string>>(new Set(['trigger']));
@@ -162,6 +162,29 @@ export default function AuraUniverse({ tourIndex }: { tourIndex: number }) {
         if (n.revealAt >= 0 && pipeProgressRef.current >= n.revealAt) newLit.add(n.id);
       }
       if (newLit.size !== litNodes.size) setLitNodes(newLit);
+
+      // Auto-advance tour index to sync terminal window with pipeline
+      const autoTourNodes = [
+        { idx: 0, at: 0 },
+        { idx: 1, at: 15 }, // Security
+        { idx: 2, at: 23 }, // GreenOps (staggered slightly to allow user to read Security logs)
+        { idx: 3, at: 35 }, // Validation
+        { idx: 4, at: 55 }, // Risk Engine
+        { idx: 5, at: 70 }, // Compliance
+        { idx: 6, at: 85 }, // Deploy
+        { idx: 7, at: 98 }, // Scorecard
+      ];
+      
+      let currentStage = 0;
+      for (let i = autoTourNodes.length - 1; i >= 0; i--) {
+        if (pipeProgressRef.current >= autoTourNodes[i].at) {
+          currentStage = autoTourNodes[i].idx;
+          break;
+        }
+      }
+      if (tourIndex !== currentStage && onTourIndexChange) {
+        onTourIndexChange(currentStage);
+      }
     }
   });
 
@@ -174,17 +197,31 @@ export default function AuraUniverse({ tourIndex }: { tourIndex: number }) {
       const [tx, ty, tz] = targetNode.pos;
       const finalX = flowState === 'IDLE' ? tx + 15 : tx;
       
-      // On mobile, lower the camera so the node appears higher up, avoiding the bottom UI overlay
       const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-      const camY = isMobile ? ty - 6 : ty;
+      
+      let camY = isMobile ? ty - 6 : ty;
+      let distZ = tz + 15;
+      
+      // Feature: Zoom out camera to visually group the Security + GreenOps parallel split
+      if (tourIndex === 1 || tourIndex === 2) {
+        camY = isMobile ? -6 : 0; // Look directly at the center of the Y-axis split
+        distZ = tz + 26; // Massive Z pushback to fit both nodes in viewport
+      }
       
       // Fly to node pos, looking perfectly backwards
-      cameraControlsRef.current.setLookAt(finalX, camY, tz + 15, finalX, camY, tz, true);
+      cameraControlsRef.current.setLookAt(finalX, camY, distZ, finalX, camY, tz, true);
       
       // Auto-expand branches for the currently focused tour node
-      if (flowState !== 'DRAWING_PIPES') {
-        setExpandedBubbles(targetNode.branches?.map(b => b.id) || []);
+      let bubblesToExpand = [...(targetNode.branches?.map(b => b.id) || [])];
+      
+      // Feature: Both parallel branches open simultaneously
+      if (tourIndex === 1 || tourIndex === 2) {
+         bubblesToExpand = [
+           ...TOUR_NODES[1].branches.map(b => b.id),
+           ...TOUR_NODES[2].branches.map(b => b.id)
+         ];
       }
+      setExpandedBubbles(bubblesToExpand);
     }
   }, [tourIndex, flowState]);
 

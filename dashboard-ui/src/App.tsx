@@ -48,7 +48,7 @@ export default function App() {
       </div>
 
       <Canvas camera={{ position: [0, 0, 30], fov: 45 }} gl={{ antialias: true }}>
-        <AuraUniverse tourIndex={tourIndex} />
+        <AuraUniverse tourIndex={tourIndex} onTourIndexChange={setTourIndex} />
       </Canvas>
 
       {/* Detailed Process Window Overlay Escaping 3D Projection */}
