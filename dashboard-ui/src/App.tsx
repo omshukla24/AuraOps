@@ -1,7 +1,38 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import AuraUniverse, { TOUR_NODES } from './components/AuraUniverse';
 import './index.css';
+
+function TypewriterTerminal({ logs, tourIndex }: { logs: string[], tourIndex: number }) {
+  const [displayedText, setDisplayedText] = useState('');
+
+  useEffect(() => {
+    setDisplayedText('');
+    if (!logs || logs.length === 0) return;
+    
+    const fullText = logs.join('\n\n');
+    let currentIndex = 0;
+    
+    const interval = setInterval(() => {
+      setDisplayedText(fullText.slice(0, currentIndex));
+      currentIndex++;
+      if (currentIndex > fullText.length) {
+        clearInterval(interval);
+      }
+    }, 15); // Fast typing speed
+    
+    return () => clearInterval(interval);
+  }, [logs, tourIndex]);
+
+  return (
+    <div style={{ background: '#020617', padding: '16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.02)', display: 'flex', flexDirection: 'column', fontFamily: "'Fira Code', 'Courier New', monospace", fontSize: '13px', color: '#10b981', minHeight: '180px', whiteSpace: 'pre-wrap' }}>
+      <div style={{ opacity: 0.9, lineHeight: '1.6' }}>
+        {displayedText}
+        <span style={{ display: 'inline-block', width: '8px', height: '14px', background: '#10b981', marginLeft: '4px', verticalAlign: 'middle', animation: 'blink 1s step-end infinite' }}></span>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   const [tourIndex, setTourIndex] = useState(0);
@@ -44,13 +75,8 @@ export default function App() {
             {TOUR_NODES[tourIndex].processDesc || "Processing metadata..."}
           </p>
           
-          {/* Terminal / Logs */}
-          <div style={{ background: '#020617', padding: '16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.02)', display: 'flex', flexDirection: 'column', gap: '10px', fontFamily: "'Fira Code', 'Courier New', monospace", fontSize: '12px', color: '#10b981', minHeight: '140px' }}>
-            {TOUR_NODES[tourIndex].logs?.map((log, i) => (
-              <div key={i} style={{ opacity: 0.8 }}>{log}</div>
-            )) || <div>&gt; Awaiting data...</div>}
-            <div className="animate-pulse" style={{ width: '8px', height: '14px', background: '#10b981', marginTop: '4px' }}></div>
-          </div>
+          {/* Terminal / Logs with Typewriter Effect */}
+          <TypewriterTerminal logs={TOUR_NODES[tourIndex].logs || []} tourIndex={tourIndex} />
 
           {/* Navigation */}
           <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
@@ -71,7 +97,10 @@ export default function App() {
         </div>
       </div>
 
-      <style>{`@keyframes pulse { 0%,100% { opacity: 0.35; } 50% { opacity: 0.8; } }`}</style>
+      <style>{`
+        @keyframes pulse { 0%,100% { opacity: 0.35; } 50% { opacity: 0.8; } }
+        @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+      `}</style>
     </div>
   );
 }
