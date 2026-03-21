@@ -1,6 +1,6 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Stars } from '@react-three/drei';
+import { Stars, CameraControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import WaterPipe from './WaterPipe';
 import PipelineNode, { type SubBranch } from './PipelineNode';
@@ -52,6 +52,8 @@ const NODES: NodeDef[] = [
   { id: 'scorecard', label: 'AuraOps Scorecard', sublabel: 'Release Complete', pos: [33, -2, 0], color: '#FBBf24', revealAt: 98, isScorecard: true, branches: [] },
 ];
 
+const TOUR_NODES = NODES; // Map exactly to the pipeline array sequence
+
 // ═══════════════════════════════════════
 //  PIPE DEFINITIONS
 // ═══════════════════════════════════════
@@ -81,8 +83,12 @@ export default function AuraUniverse() {
   const pipeProgressRef = useRef(0); // 0 to 100
   const [litNodes, setLitNodes] = useState<Set<string>>(new Set(['trigger']));
   const [expandedBubbles, setExpandedBubbles] = useState<string[]>([]);
+  
+  // Guided Tour State
+  const [tourIndex, setTourIndex] = useState(0);
+  const [isTourActive, setIsTourActive] = useState(false);
 
-  // Group starts at +15 so the Trigger at -15 appears exactly at 0,0,0 initially
+  const cameraControlsRef = useRef<CameraControls>(null);
   const groupRef = useRef<THREE.Group>(null);
   const groupPos = useRef(new THREE.Vector3(15, 0, 0));
 
@@ -101,7 +107,6 @@ export default function AuraUniverse() {
   useFrame((_, dt) => {
     
     if (flowState === 'SHIFTING_LAYOUT') {
-      // Shift from +15 -> 0 to logically pan camera over to the trigger
       const rate = Math.min(1, dt * 2.5);
       groupPos.current.x += (0 - groupPos.current.x) * rate;
       if (groupRef.current) groupRef.current.position.copy(groupPos.current);
@@ -119,6 +124,8 @@ export default function AuraUniverse() {
       if (pipeProgressRef.current >= 100) {
         pipeProgressRef.current = 100;
         setFlowState('COMPLETE');
+        setIsTourActive(true);
+        setTourIndex(0); // Autostart tour at origin
       }
 
       const newLit = new Set(['trigger']);
@@ -129,8 +136,30 @@ export default function AuraUniverse() {
     }
   });
 
+  // Cinematic Fly-To Animation
+  useEffect(() => {
+    if (isTourActive && cameraControlsRef.current) {
+      const targetNode = TOUR_NODES[tourIndex];
+      const [tx, ty, tz] = targetNode.pos;
+      // Fly to node pos, looking perfectly backwards
+      cameraControlsRef.current.setLookAt(tx, ty, tz + 15, tx, ty, tz, true);
+    }
+  }, [tourIndex, isTourActive]);
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setTourIndex(i => Math.min(TOUR_NODES.length - 1, i + 1));
+  };
+  
+  const handleBack = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setTourIndex(i => Math.max(0, i - 1));
+  };
+
   return (
     <>
+      <CameraControls ref={cameraControlsRef} makeDefault />
+
       {/* Pitch black static starfield */}
       <Stars radius={150} depth={50} count={7000} factor={4} saturation={0} fade speed={0} />
 
@@ -176,6 +205,25 @@ export default function AuraUniverse() {
           />
         ))}
       </group>
+
+      {/* 2D Cinematic Guided Tour Overlay */}
+      {isTourActive && (
+        <Html fullscreen zIndexRange={[100, 0]} style={{ pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)', pointerEvents: 'auto' }}>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)', padding: '12px 24px', borderRadius: '99px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <button onClick={handleBack} disabled={tourIndex === 0} style={{ color: tourIndex === 0 ? '#555' : '#fff', cursor: tourIndex === 0 ? 'default' : 'pointer', background: 'none', border: 'none', fontSize: '14px', fontWeight: 600 }}>
+                &larr; BACK
+              </button>
+              <div style={{ color: '#06B6D4', fontSize: '13px', fontWeight: 700, minWidth: '150px', textAlign: 'center', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                {TOUR_NODES[tourIndex].label}
+              </div>
+              <button onClick={handleNext} disabled={tourIndex === TOUR_NODES.length - 1} style={{ color: tourIndex === TOUR_NODES.length - 1 ? '#555' : '#fff', cursor: tourIndex === TOUR_NODES.length - 1 ? 'default' : 'pointer', background: 'none', border: 'none', fontSize: '14px', fontWeight: 600 }}>
+                NEXT &rarr;
+              </button>
+            </div>
+          </div>
+        </Html>
+      )}
     </>
   );
 }

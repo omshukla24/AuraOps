@@ -13,7 +13,6 @@ export default function App() {
 
       <Canvas camera={{ position: [0, 0, 30], fov: 45 }} gl={{ antialias: true }}>
         <AuraUniverse />
-        <OrbitControls makeDefault enablePan={true} enableZoom={true} enableRotate={true} target={[0, 0, 0]} />
       </Canvas>
 
       <style>{`@keyframes pulse { 0%,100% { opacity: 0.35; } 50% { opacity: 0.8; } }`}</style>
