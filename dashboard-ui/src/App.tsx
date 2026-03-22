@@ -69,9 +69,69 @@ function HistoryWindow() {
   );
 }
 
+function TriggerModal({ onClose, mriid, setMriid, projectId, setProjectId }: any) {
+  const [loading, setLoading] = useState(false);
+
+  const handleRun = async () => {
+    setLoading(true);
+    try {
+      await fetch('/api/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: projectId || 'omshukla24/AuraOps',
+          mr_iid: parseInt(mriid) || 42
+        })
+      });
+      // Optionally reset the local node rendering here, or let the server logic overwrite it
+      onClose();
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 backdrop-blur-sm pointer-events-auto">
+      <div className="bg-slate-900 border border-white/20 p-6 rounded-2xl w-[90%] max-w-sm flex flex-col gap-4 shadow-[0_0_50px_rgba(139,92,246,0.2)]">
+        <h2 className="text-white font-bold tracking-[2px] uppercase text-sm">Manual Analysis</h2>
+        <div className="flex flex-col gap-2">
+          <label className="text-[10px] text-cyan-400 font-mono tracking-widest uppercase">Project ID</label>
+          <input 
+            type="text" 
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            className="bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-[13px] font-mono focus:outline-none focus:border-cyan-400"
+            placeholder="omshukla24/AuraOps"
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className="text-[10px] text-cyan-400 font-mono tracking-widest uppercase">Merge Request ID</label>
+          <input 
+            type="text" 
+            value={mriid}
+            onChange={(e) => setMriid(e.target.value)}
+            className="bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-[13px] font-mono focus:outline-none focus:border-cyan-400"
+            placeholder="42"
+          />
+        </div>
+        <div className="flex gap-3 mt-2">
+          <button onClick={onClose} className="flex-1 py-2 text-white/50 hover:bg-white/5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-colors">Cancel</button>
+          <button onClick={handleRun} disabled={loading} className="flex-1 py-2 bg-cyan-500 hover:bg-cyan-400 text-black text-[11px] font-bold uppercase tracking-widest rounded-lg transition-colors">
+            {loading ? 'Running...' : 'Run Pipeline'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [tourIndex, setTourIndex] = useState(0);
   const [nodes, setNodes] = useState<NodeDef[]>(INITIAL_NODES);
+  const [showTriggerModal, setShowTriggerModal] = useState(false);
+  const [mriid, setMriid] = useState('42');
+  const [projectId, setProjectId] = useState('omshukla24/AuraOps');
 
   useEffect(() => {
     const source = new EventSource('/api/events');
@@ -134,7 +194,21 @@ export default function App() {
       <div className="absolute top-4 left-4 md:top-6 md:left-6 z-10 pointer-events-none">
         <h1 className="text-xl md:text-3xl font-bold tracking-[6px] text-white font-['Space_Grotesk','Inter',sans-serif] drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]" style={{ textShadow: '0 0 5px #06b6d4, 0 0 15px #06b6d4' }}>AURAOPS</h1>
         <p className="text-[8px] md:text-[10px] tracking-[2px] text-cyan-300 mt-1 uppercase font-['Space_Grotesk','Inter',sans-serif] hidden sm:block drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]">Autonomous Unified Release Authority for Operations</p>
+        <button 
+          onClick={() => setShowTriggerModal(true)}
+          className="pointer-events-auto mt-3 px-4 py-1.5 bg-violet-600/20 hover:bg-violet-600/40 border border-violet-500/50 rounded-full text-violet-200 text-[10px] uppercase font-bold tracking-[2px] transition-all"
+        >
+          + Manual Trigger
+        </button>
       </div>
+
+      {showTriggerModal && (
+        <TriggerModal 
+          onClose={() => setShowTriggerModal(false)}
+          mriid={mriid} setMriid={setMriid}
+          projectId={projectId} setProjectId={setProjectId}
+        />
+      )}
 
       <HistoryWindow />
 
