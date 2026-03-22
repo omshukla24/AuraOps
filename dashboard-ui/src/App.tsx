@@ -1,22 +1,104 @@
+import { useState, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
-import AuraUniverse from './components/AuraUniverse';
+import AuraUniverse, { TOUR_NODES } from './components/AuraUniverse';
 import './index.css';
 
-export default function App() {
+function TypewriterTerminal({ logs, tourIndex }: { logs: string[], tourIndex: number }) {
+  const [displayedText, setDisplayedText] = useState('');
+
+  useEffect(() => {
+    setDisplayedText('');
+    if (!logs || logs.length === 0) return;
+    
+    const fullText = logs.join('\n\n');
+    let currentIndex = 0;
+    
+    const interval = setInterval(() => {
+      setDisplayedText(fullText.slice(0, currentIndex));
+      currentIndex++;
+      if (currentIndex > fullText.length) {
+        clearInterval(interval);
+      }
+    }, 15); // Fast typing speed
+    
+    return () => clearInterval(interval);
+  }, [logs, tourIndex]);
+
   return (
-    <div className="w-screen h-screen overflow-hidden relative" style={{ background: '#000000' }}>
-      <div className="absolute top-6 left-6 z-10 pointer-events-none">
-        <h1 className="text-2xl font-bold tracking-[4px] bg-gradient-to-r from-cyan-400 to-cyan-100 bg-clip-text text-transparent" style={{ fontFamily: "'Space Grotesk','Inter',sans-serif" }}>AuraOps</h1>
-        <p className="text-[10px] tracking-[2px] text-cyan-700/50 mt-1 uppercase" style={{ fontFamily: "'Space Grotesk','Inter',sans-serif" }}>Autonomous Unified Release Authority for Operations</p>
+    <div className="bg-black/40 backdrop-blur-md p-3 md:p-4 rounded-lg border border-white/10 flex flex-col font-mono text-[11px] md:text-[13px] text-emerald-400 min-h-[140px] md:min-h-[180px] whitespace-pre-wrap flex-1 overflow-y-auto shadow-inner">
+      <div className="opacity-90 leading-relaxed">
+        {displayedText}
+        <span className="inline-block w-2 h-3.5 bg-emerald-400 ml-1 align-middle animate-[blink_1s_step-end_infinite]"></span>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [tourIndex, setTourIndex] = useState(0);
+
+  const handleNext = () => setTourIndex(i => Math.min(TOUR_NODES.length - 1, i + 1));
+  const handleBack = () => setTourIndex(i => Math.max(0, i - 1));
+
+  return (
+    <div className="w-screen h-screen overflow-hidden relative bg-black">
+      <div className="absolute top-4 left-4 md:top-6 md:left-6 z-10 pointer-events-none">
+        <h1 className="text-xl md:text-3xl font-bold tracking-[6px] text-white font-['Space_Grotesk','Inter',sans-serif] drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]" style={{ textShadow: '0 0 5px #06b6d4, 0 0 15px #06b6d4' }}>AURAOPS</h1>
+        <p className="text-[8px] md:text-[10px] tracking-[2px] text-cyan-300 mt-1 uppercase font-['Space_Grotesk','Inter',sans-serif] hidden sm:block drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]">Autonomous Unified Release Authority for Operations</p>
       </div>
 
-      <Canvas camera={{ position: [0, 0, 12], fov: 55 }} gl={{ antialias: true }}>
-        <AuraUniverse />
-        <OrbitControls enableDamping dampingFactor={0.06} enableZoom enablePan maxDistance={60} minDistance={6} />
+      <Canvas camera={{ position: [0, 0, 30], fov: 45 }} gl={{ antialias: true }}>
+        <AuraUniverse tourIndex={tourIndex} onTourIndexChange={setTourIndex} />
       </Canvas>
 
-      <style>{`@keyframes pulse { 0%,100% { opacity: 0.35; } 50% { opacity: 0.8; } }`}</style>
+      {/* Detailed Process Window Overlay Escaping 3D Projection */}
+      <div className="absolute bottom-4 left-4 right-4 md:bottom-8 md:left-8 md:right-auto md:w-[28rem] pointer-events-auto z-[1000]">
+        <div className="bg-gradient-to-br from-slate-900/30 to-black/40 backdrop-blur-xl p-4 md:p-6 rounded-2xl border flex flex-col gap-3 md:gap-5 max-h-[45vh] md:max-h-none animate-[border-glow_4s_ease-in-out_infinite]">
+          
+          {/* Header */}
+          <div className="flex items-center gap-3">
+            <div className="text-xl md:text-2xl bg-white/10 backdrop-blur-sm w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg border border-white/5 shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+              {TOUR_NODES[tourIndex].icon || '⚙️'}
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-white m-0 text-base md:text-xl font-semibold font-['Inter',sans-serif] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                {TOUR_NODES[tourIndex].label}
+              </h2>
+            </div>
+          </div>
+          
+          {/* Description */}
+          <p className="text-slate-300 text-xs md:text-sm leading-relaxed m-0 font-['Inter',sans-serif] hidden sm:block drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+            {TOUR_NODES[tourIndex].processDesc || "Processing metadata..."}
+          </p>
+          
+          {/* Terminal / Logs with Typewriter Effect */}
+          <TypewriterTerminal logs={TOUR_NODES[tourIndex].logs || []} tourIndex={tourIndex} />
+
+          {/* Navigation */}
+          <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+            <button 
+              onClick={handleBack} 
+              disabled={tourIndex === 0} 
+              style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: tourIndex === 0 ? '#475569' : '#fff', cursor: tourIndex === 0 ? 'default' : 'pointer', border: '1px solid rgba(255,255,255,0.1)', fontSize: '13px', fontWeight: 600, fontFamily: "'Inter', sans-serif", transition: 'all 0.3s ease', boxShadow: tourIndex === 0 ? 'none' : 'inset 0 0 10px rgba(255,255,255,0.05)' }}>
+              &larr; PREV
+            </button>
+            <button 
+              onClick={handleNext} 
+              disabled={tourIndex === TOUR_NODES.length - 1} 
+              style={{ flex: 1, padding: '12px', borderRadius: '8px', background: tourIndex === TOUR_NODES.length - 1 ? 'rgba(255,255,255,0.05)' : '#06B6D4', color: tourIndex === TOUR_NODES.length - 1 ? '#475569' : '#000', cursor: tourIndex === TOUR_NODES.length - 1 ? 'default' : 'pointer', border: '1px solid rgba(255,255,255,0.1)', fontSize: '13px', fontWeight: 700, fontFamily: "'Inter', sans-serif", transition: 'all 0.3s ease', boxShadow: tourIndex === TOUR_NODES.length - 1 ? 'none' : '0 0 15px rgba(6,182,212,0.6), inset 0 0 10px rgba(255,255,255,0.4)', textShadow: tourIndex === TOUR_NODES.length - 1 ? 'none' : '0 0 5px rgba(255,255,255,0.5)' }}>
+              NEXT &rarr;
+            </button>
+          </div>
+          
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes pulse { 0%,100% { opacity: 0.35; } 50% { opacity: 0.8; } }
+        @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+        @keyframes border-glow { 0%, 100% { box-shadow: 0 0 10px rgba(6, 182, 212, 0.05); border-color: rgba(255, 255, 255, 0.05); } 50% { box-shadow: 0 0 25px rgba(6, 182, 212, 0.25); border-color: rgba(34, 211, 238, 0.2); } }
+      `}</style>
     </div>
   );
 }
