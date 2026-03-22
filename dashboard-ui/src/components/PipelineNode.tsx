@@ -57,10 +57,11 @@ export default function PipelineNode({
     
     if (fluidMatRef.current && isVisible) {
       if (isProcessing) {
-        const pulse = 0.5 + Math.abs(Math.sin(clock.getElapsedTime() * 4)) * 1.5;
-        fluidMatRef.current.emissiveIntensity = hovered ? 2.5 : pulse;
+        // Subtle pulse so fluid geometry remains highly visible
+        const pulse = 0.3 + Math.abs(Math.sin(clock.getElapsedTime() * 3)) * 0.3;
+        fluidMatRef.current.emissiveIntensity = hovered ? 0.8 : pulse;
       } else {
-        fluidMatRef.current.emissiveIntensity = hovered ? 1.5 : 0.8;
+        fluidMatRef.current.emissiveIntensity = hovered ? 0.8 : 0.4;
       }
     }
     if (meteorRef.current && isVisible) {
@@ -79,7 +80,7 @@ export default function PipelineNode({
           {/* Jelly Fluid Sphere */}
           <mesh>
             <sphereGeometry args={[r * 0.8, 32, 32]} />
-            <MeshDistortMaterial ref={fluidMatRef} color={col} emissive={col} emissiveIntensity={0.8} distort={0.5} speed={3} roughness={0.2} transparent opacity={scaleVal.current} />
+            <MeshDistortMaterial ref={fluidMatRef} color={col} emissive={col} emissiveIntensity={0.4} distort={0.5} speed={3} roughness={0.2} transparent opacity={scaleVal.current} />
           </mesh>
           {/* Glass Trapping Box */}
           <RoundedBox args={[r * 2.2, r * 2.2, r * 2.2]} radius={0.1} smoothness={4}>
