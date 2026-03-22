@@ -1,6 +1,6 @@
 import { useRef, useState, useMemo } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
-import { Html, RoundedBox, MeshDistortMaterial, MeshTransmissionMaterial, Float } from '@react-three/drei';
+import { Html, RoundedBox, MeshDistortMaterial, Float, Edges } from '@react-three/drei';
 import * as THREE from 'three';
 
 export interface SubBranch {
@@ -57,11 +57,11 @@ export default function PipelineNode({
     
     if (fluidMatRef.current && isVisible) {
       if (isProcessing) {
-        // Subtle pulse so fluid geometry remains highly visible
-        const pulse = 0.3 + Math.abs(Math.sin(clock.getElapsedTime() * 3)) * 0.3;
-        fluidMatRef.current.emissiveIntensity = hovered ? 0.8 : pulse;
+        // High visibility pulse for the fluid
+        const pulse = 0.8 + Math.abs(Math.sin(clock.getElapsedTime() * 4)) * 1.2;
+        fluidMatRef.current.emissiveIntensity = hovered ? 2.5 : pulse;
       } else {
-        fluidMatRef.current.emissiveIntensity = hovered ? 0.8 : 0.4;
+        fluidMatRef.current.emissiveIntensity = hovered ? 1.5 : 0.6;
       }
     }
     if (meteorRef.current && isVisible) {
@@ -80,11 +80,14 @@ export default function PipelineNode({
           {/* Jelly Fluid Sphere */}
           <mesh>
             <sphereGeometry args={[r * 0.8, 32, 32]} />
-            <MeshDistortMaterial ref={fluidMatRef} color={col} emissive={col} emissiveIntensity={0.4} distort={0.5} speed={3} roughness={0.2} transparent opacity={scaleVal.current} />
+            <MeshDistortMaterial ref={fluidMatRef} color={col} emissive={col} emissiveIntensity={0.6} distort={0.5} speed={3} roughness={0.2} transparent opacity={scaleVal.current} toneMapped={false} />
           </mesh>
-          {/* Glass Trapping Box */}
+          {/* Faint Glass Box with Neon Wireframe Highlights */}
           <RoundedBox args={[r * 2.2, r * 2.2, r * 2.2]} radius={0.1} smoothness={4}>
-            <MeshTransmissionMaterial color={col} transmission={0.9} opacity={1} transparent thickness={0.5} roughness={0.1} />
+            <meshPhysicalMaterial color={col} transparent opacity={0.1} depthWrite={false} roughness={0.1} metalness={0.5} />
+            <Edges threshold={15}>
+              <lineBasicMaterial color={col} transparent opacity={hovered ? 1 : 0.4} toneMapped={false} />
+            </Edges>
           </RoundedBox>
         </group>
       </Float>
