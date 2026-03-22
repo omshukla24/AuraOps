@@ -75,18 +75,21 @@ export default function PipelineNode({
 
   return (
     <group position={position}>
+      {/* Restore pointLight to give 3D volume to the sphere and box */}
+      {isVisible && <pointLight color={color} intensity={2} distance={8} decay={2} />}
+
       <Float speed={1.5} rotationIntensity={0.6} floatIntensity={0.8} floatingRange={[-0.15, 0.15]}>
         <group ref={meshRef} onClick={click} onPointerOver={() => setHovered(true)} onPointerOut={() => setHovered(false)}>
-          {/* Jelly Fluid Sphere */}
+          {/* Faintly Glowing Jelly Fluid Sphere */}
           <mesh>
             <sphereGeometry args={[r * 0.8, 32, 32]} />
-            <MeshDistortMaterial ref={fluidMatRef} color={col} emissive={col} emissiveIntensity={0.6} distort={0.5} speed={3} roughness={0.2} transparent opacity={scaleVal.current} toneMapped={false} />
+            <MeshDistortMaterial ref={fluidMatRef} color={col} emissive={col} emissiveIntensity={0.5} distort={0.5} speed={3} roughness={0.3} transparent opacity={0.8} />
           </mesh>
-          {/* Faint Glass Box with Neon Wireframe Highlights */}
+          {/* Crystal Clear Glass Box */}
           <RoundedBox args={[r * 2.2, r * 2.2, r * 2.2]} radius={0.1} smoothness={4}>
-            <meshPhysicalMaterial color={col} transparent opacity={0.1} depthWrite={false} roughness={0.1} metalness={0.5} />
+            <meshStandardMaterial color={col} transparent opacity={0.25} depthWrite={false} roughness={0.1} metalness={0.9} />
             <Edges threshold={15}>
-              <lineBasicMaterial color={col} transparent opacity={hovered ? 1 : 0.4} toneMapped={false} />
+              <lineBasicMaterial attach="material" color={col} transparent opacity={hovered ? 1 : 0.6} toneMapped={false} />
             </Edges>
           </RoundedBox>
         </group>
@@ -103,8 +106,6 @@ export default function PipelineNode({
           ))}
         </group>
       )}
-
-
 
       {isVisible && !isScorecard && (
         <Html position={[0, -(r + 0.8), 0]} center distanceFactor={15} style={{ pointerEvents: 'none' }}>
