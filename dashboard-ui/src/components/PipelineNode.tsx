@@ -191,7 +191,7 @@ export default function PipelineNode({
             ))}
 
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px', marginTop: '12px', fontSize: 'clamp(11px, 0.9vw, 14px)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}><span style={{ color: '#8899aa' }}>🤖 Model Reasoning</span><span style={{ color: '#38BDF8', fontWeight: 700 }}>Claude 3.5 Sonnet</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}><span style={{ color: '#8899aa' }}>🤖 Model Reasoning</span><span style={{ color: '#38BDF8', fontWeight: 700 }}>Claude 4.6 Sonnet</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}><span style={{ color: '#8899aa' }}>🧪 Integration Tests</span><span style={{ color: '#50ffb0', fontWeight: 700 }}>142 Passed</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}><span style={{ color: '#8899aa' }}>🚀 Cloud Run Rev</span><span style={{ color: '#06B6D4', fontWeight: 700 }}>auraops-demo-00042</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#8899aa' }}>⚖️ Confidence Score</span><span style={{ color: '#FBBf24', fontWeight: 700 }}>91%</span></div>

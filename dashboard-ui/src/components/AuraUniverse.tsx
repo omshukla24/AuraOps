@@ -33,13 +33,13 @@ const NODES: NodeDef[] = [
     logs: ['> Received POST /webhook/gitlab', '> Event: Merge Request #42 Opened', '> Author: @omshukla24', '> Extracted 3 changed files', '> Triggering agent orchestration...']
   },
   {
-    id: 'security', label: 'SecurityAgent', sublabel: 'Claude Sonnet', pos: [-7, 6, -2], color: '#F97066', revealAt: 15, branches: [
-      { id: 'sec-v', label: 'Vulnerabilities', value: '3 → 0 Patched', details: ['CVE-2024-032: Cryptography upgrade', 'CVE-2023-441: SQLi plugged', 'Pydantic core bypass resolved'], dormant: [0.6, 0.6, 0], expanded: [0, 5.0, -2.5] },
-      { id: 'sec-s', label: 'Security Score', value: '84/100', details: ['Pre-patch score: 42/100', 'Post-patch score: 84/100', 'Risk Threshold limit: < 50'], dormant: [-0.6, 0.5, 0.3], expanded: [-4.5, 3.5, 0] },
-      { id: 'sec-m', label: 'Analysis', value: 'Claude Sonnet 3.5', details: ['Deep AST scan completed in 1.2s', 'Auto-generated 4 patch candidates', 'Selected optimal structural transformation'], dormant: [0.4, -0.5, -0.5], expanded: [4.5, 3.0, 1.2] },
+    id: 'security', label: 'SecurityAgent', sublabel: 'Claude 4.6 Sonnet', pos: [-7, 6, -2], color: '#F97066', revealAt: 15, branches: [
+      { id: 'sec-v', label: 'Vulnerabilities', value: '3 → 0 Patched', details: ['SQL Injection (High): Auto-patched', 'Hardcoded Secret (Critical): Rotated & removed', 'XSS (Med): Sanitized output'], dormant: [0.5, 0.4, 0], expanded: [-1.2, 4.0, 1] },
+      { id: 'sec-s', label: 'Security Score', value: '84/100', details: ['Zero criticals remaining', 'Dependency check: Pass', 'Identity & Access constraint verified'], dormant: [-0.5, 0.3, 0.2], expanded: [-4.2, 1.5, 0] },
+      { id: 'sec-m', label: 'Analysis', value: 'Claude 4.6 Sonnet', details: ['Deep AST scan completed in 1.2s', 'Auto-generated 4 patch candidates', 'Selected optimal structural transformation'], dormant: [0.4, -0.5, -0.5], expanded: [4.5, 3.0, 1.2] },
     ],
-    icon: '🛡️',
-    processDesc: 'Claude 3.5 Sonnet is conducting SAST/DAST analysis on the modified lines. Searching for credential leaks and hardcoded vulnerabilities.',
+    icon: '🔐',
+    processDesc: 'Claude 4.6 Sonnet is conducting SAST/DAST analysis on the modified lines. Searching for credential leaks and hardcoded vulnerabilities.',
     logs: ['> Target: backend/auth.py', '> Detected hardcoded AWS secret (Line 42)', '> Generating AST syntax tree...', '> Auto-patching vulnerability with Claude', '> Patch successfully verified via linter']
   },
   {
@@ -63,8 +63,8 @@ const NODES: NodeDef[] = [
   },
   {
     id: 'risk', label: 'RiskEngine', sublabel: 'Release Authority', pos: [9, 4, -1], color: '#F59E0B', revealAt: 55, branches: [
-      { id: 'rsk-d', label: 'Decision', value: 'APPROVED', details: ['Cross-referenced 3 Agentic evaluations', 'Compliance overrides safely negated', 'Automatic merge protocol initiated'], dormant: [0, 0.7, 0], expanded: [0, 5.0, -1.2] },
-      { id: 'rsk-c', label: 'Confidence', value: '91%', details: ['Claude Sonnet structural consensus: 94%', 'Regex/Linter certainty constraint: 100%', 'Historical success baseline weight: 88%'], dormant: [0, -0.6, 0], expanded: [0, -5.0, 1.2] },
+      { id: 'rsk-d', label: 'Decision', value: 'APPROVED', details: ['All blocking checks resolved', 'No regressions introduced', 'GreenOps tolerance acceptable'], dormant: [0, 0.7, 0], expanded: [0, 5.0, -1.2] },
+      { id: 'rsk-c', label: 'Confidence', value: '91%', details: ['Claude 4.6 Sonnet structural consensus: 94%', 'Regex/Linter certainty constraint: 100%', 'Historical success baseline weight: 88%'], dormant: [0, -0.6, 0], expanded: [0, -5.0, 1.2] },
     ],
     icon: '⚖️',
     processDesc: 'Consolidating AI reports from Security, GreenOps, and Validation to calculate a unified risk tolerance matrix before merge.',

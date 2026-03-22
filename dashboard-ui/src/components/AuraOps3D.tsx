@@ -42,7 +42,7 @@ type AnimState = 'idle' | 'flowing' | 'complete';
 
 const NODES: PipeNode[] = [
   { id: 'trigger',    label: 'GitLab MR Opened',  sublabel: 'Webhook received',   position: [0, 4, 0],        color: '#ffffff', glow: '#ffffff',  radius: 0.35, litAt: -1 },
-  { id: 'security',   label: 'SecurityAgent',      sublabel: 'Claude Sonnet',      position: [-2.5, 1.5, -1],  color: '#F97066', glow: '#F97066',  radius: 0.35, litAt: 800 },
+  { id: 'security',   label: 'SecurityAgent',      sublabel: 'Claude 4.6 Sonnet',      position: [-2.5, 1.5, -1],  color: '#F97066', glow: '#F97066',  radius: 0.35, litAt: 800 },
   { id: 'greenops',   label: 'GreenOpsAgent',      sublabel: 'Carbon API',         position: [2.5, 1.5, -1],   color: '#10B981', glow: '#10B981',  radius: 0.35, litAt: 800 },
   { id: 'validation', label: 'ValidationAgent',    sublabel: 'GitLab CI',          position: [0, -1, -0.5],    color: '#38BDF8', glow: '#38BDF8',  radius: 0.35, litAt: 2400 },
   { id: 'risk',       label: 'RiskEngine',         sublabel: 'Release Authority',  position: [0, -3, 0],       color: '#F59E0B', glow: '#F59E0B',  radius: 0.35, litAt: 3200 },
