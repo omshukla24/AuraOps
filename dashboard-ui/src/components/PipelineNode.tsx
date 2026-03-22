@@ -1,12 +1,13 @@
 import { useRef, useState, useMemo } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+import { Html, RoundedBox, MeshDistortMaterial, Float, Edges } from '@react-three/drei';
 import * as THREE from 'three';
 
 export interface SubBranch {
   id: string;
   label: string;
   value: string;
+  details?: string[];
   dormant: [number, number, number];
   expanded: [number, number, number];
 }
@@ -25,26 +26,49 @@ interface Props {
   onTriggerClick?: () => void;
   showClickHint?: boolean;
   isScorecard?: boolean;
+  isProcessing?: boolean;
 }
 
 export default function PipelineNode({
   label, sublabel, position, color, isTrigger, isVisible,
-  branches, expandedBubbles, onToggleBubble, onTriggerClick, showClickHint, isScorecard,
+  branches, expandedBubbles, onToggleBubble, onTriggerClick, showClickHint, isScorecard, isProcessing
 }: Props) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const glowRef = useRef<THREE.Mesh>(null);
+  const meshRef = useRef<THREE.Group>(null);
+  const fluidMatRef = useRef<any>(null);
+  const meteorRef = useRef<THREE.Group>(null);
   const scaleVal = useRef(isTrigger ? 1 : 0);
   const [hovered, setHovered] = useState(false);
   const col = useMemo(() => new THREE.Color(color), [color]);
-  const r = isTrigger ? 0.5 : 0.35;
+  const r = isTrigger ? 0.5 : 0.45;
+
+  const meteors = useMemo(() => {
+    return Array.from({ length: 15 }).map((_, i) => {
+      const angle = (i / 15) * Math.PI * 2;
+      const dist = r * 3;
+      const yOff = Math.sin(angle * 3) * 0.3;
+      return { pos: [Math.cos(angle) * dist, yOff, Math.sin(angle) * dist] as [number, number, number], scale: 0.05 + Math.random() * 0.05 };
+    });
+  }, [r]);
 
   useFrame(({ clock }, dt) => {
     const target = isVisible ? 1 : 0;
     scaleVal.current += (target - scaleVal.current) * Math.min(1, 1.5 * dt);
+    
     if (meshRef.current) meshRef.current.scale.setScalar(Math.max(0.001, scaleVal.current));
-    if (glowRef.current) {
-      const m = glowRef.current.material as THREE.MeshBasicMaterial;
-      m.opacity = scaleVal.current * (0.06 + Math.sin(clock.getElapsedTime() * 1.5) * 0.03);
+    
+    if (fluidMatRef.current && isVisible) {
+      if (isProcessing) {
+        // High visibility pulse for the fluid
+        const pulse = 0.8 + Math.abs(Math.sin(clock.getElapsedTime() * 4)) * 1.2;
+        fluidMatRef.current.emissiveIntensity = hovered ? 2.5 : pulse;
+      } else {
+        fluidMatRef.current.emissiveIntensity = hovered ? 1.5 : 0.6;
+      }
+    }
+    if (meteorRef.current && isVisible) {
+      meteorRef.current.rotation.y += dt * 0.8;
+      meteorRef.current.rotation.z = Math.sin(clock.getElapsedTime()) * 0.1;
+      meteorRef.current.rotation.x = Math.cos(clock.getElapsedTime() * 0.8) * 0.1;
     }
   });
 
@@ -52,24 +76,60 @@ export default function PipelineNode({
 
   return (
     <group position={position}>
-      <mesh ref={meshRef} onClick={click} onPointerOver={() => setHovered(true)} onPointerOut={() => setHovered(false)}>
-        <sphereGeometry args={[r, 48, 48]} />
-        <meshStandardMaterial color={col} emissive={col} emissiveIntensity={hovered ? 1.5 : 0.6} roughness={0.1} metalness={0.8} transparent opacity={scaleVal.current} />
-      </mesh>
-      <mesh ref={glowRef}><sphereGeometry args={[r * 2, 32, 32]} /><meshBasicMaterial color={col} transparent opacity={0.04} side={THREE.BackSide} /></mesh>
-      {isVisible && <pointLight color={color} intensity={0.6} distance={6} decay={2} />}
+      {/* Restore pointLight to give 3D volume to the sphere and box */}
+      {isVisible && <pointLight color={color} intensity={2} distance={8} decay={2} />}
 
-      {isVisible && (
-        <Html position={[0, -(r + 0.5), 0]} center style={{ pointerEvents: 'none' }}>
-          <div style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '5px 12px', textAlign: 'center', fontFamily: "'Inter',sans-serif" }}>
-            <div style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>{label}</div>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '9px' }}>{sublabel}</div>
+      <Float speed={1.5} rotationIntensity={0.6} floatIntensity={0.8} floatingRange={[-0.15, 0.15]}>
+        <group ref={meshRef} onClick={click} onPointerOver={() => setHovered(true)} onPointerOut={() => setHovered(false)}>
+          {/* Faintly Glowing Jelly Fluid Sphere */}
+          <mesh>
+            <sphereGeometry args={[r * 0.8, 32, 32]} />
+            <MeshDistortMaterial ref={fluidMatRef} color={col} emissive={col} emissiveIntensity={0.5} distort={0.5} speed={3} roughness={0.3} transparent opacity={0.8} />
+          </mesh>
+          
+          {/* Reflective Crystal Glass Box */}
+          <RoundedBox args={[r * 2.2, r * 2.2, r * 2.2]} radius={0.1} smoothness={4}>
+            <meshPhysicalMaterial 
+              color={col} 
+              transparent 
+              opacity={hovered ? 0.3 : 0.4} 
+              depthWrite={false} 
+              roughness={0.1} 
+              metalness={0.2}
+              clearcoat={1.0}
+              clearcoatRoughness={0.1} 
+            />
+            <Edges color={color} />
+          </RoundedBox>
+        </group>
+      </Float>
+      
+      {/* Meteor Rings */}
+      {isTrigger && isVisible && (
+        <group ref={meteorRef}>
+          {meteors.map((m, i) => (
+            <mesh key={i} position={m.pos}>
+              <dodecahedronGeometry args={[m.scale]} />
+              <meshStandardMaterial color={col} emissive={col} emissiveIntensity={1.5} roughness={0.4} />
+            </mesh>
+          ))}
+        </group>
+      )}
+
+      {isVisible && !isScorecard && (
+        <Html position={[0, -(r + 0.8), 0]} center distanceFactor={15} style={{ pointerEvents: 'none' }}>
+          <div style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(12px)', border: `1px solid ${color}40`, borderRadius: '8px', padding: '0.5vw 1vw', textAlign: 'center', fontFamily: "'Inter',sans-serif", whiteSpace: 'nowrap', boxShadow: `0 0 15px ${color}30` }}>
+            <div style={{ color: '#fff', fontSize: 'clamp(14px, 1.2vw, 24px)', fontWeight: 700, textShadow: `0 0 8px ${color}80` }}>{label}</div>
+            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(11px, 0.9vw, 18px)' }}>{sublabel}</div>
           </div>
         </Html>
       )}
 
       {isTrigger && showClickHint && (
-        <Html position={[0, -1.8, 0]} center><div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', letterSpacing: '2px', fontFamily: "'Inter',sans-serif", animation: 'pulse 2s infinite' }}>CLICK TO BEGIN ANALYSIS</div></Html>
+        <Html position={[0, -2.5, 0]} center distanceFactor={15}>
+          <div style={{ color: '#22d3ee', fontSize: 'clamp(12px, 1vw, 20px)', letterSpacing: '2px', fontWeight: 600, fontFamily: "'Inter',sans-serif", animation: 'pulse-glow 2s infinite', whiteSpace: 'nowrap', textShadow: '0 0 10px #22d3ee, 0 0 20px #06b6d4' }}>CLICK TO RECORD EVENT</div>
+          <style>{`@keyframes pulse-glow { 0%, 100% { opacity: 0.4; text-shadow: 0 0 5px #22d3ee; } 50% { opacity: 1; text-shadow: 0 0 15px #22d3ee, 0 0 30px #06b6d4; } }`}</style>
+        </Html>
       )}
 
       {isVisible && !isTrigger && !isScorecard && branches.map(b => {
@@ -77,15 +137,28 @@ export default function PipelineNode({
         const off = isExp ? b.expanded : b.dormant;
         return (
           <group key={b.id}>
-            <mesh position={off} onClick={(e) => { e.stopPropagation(); onToggleBubble(b.id); }} onPointerOver={() => { document.body.style.cursor = 'pointer'; }} onPointerOut={() => { document.body.style.cursor = 'auto'; }}>
-              <sphereGeometry args={[isExp ? 0.12 : 0.07, 20, 20]} />
-              <meshStandardMaterial color={color} emissive={color} emissiveIntensity={isExp ? 1.5 : 0.4} roughness={0.2} metalness={0.7} />
-            </mesh>
+            <Float speed={2} rotationIntensity={0.3} floatIntensity={0.5} floatingRange={[-0.08, 0.08]}>
+              <mesh position={off} onClick={(e) => { e.stopPropagation(); onToggleBubble(b.id); }} onPointerOver={() => { document.body.style.cursor = 'pointer'; }} onPointerOut={() => { document.body.style.cursor = 'auto'; }}>
+                <sphereGeometry args={[isExp ? 0.6 : 0.2, 32, 32]} />
+                <meshStandardMaterial color={color} emissive={color} emissiveIntensity={isExp ? 2.0 : 0.6} roughness={0.2} metalness={0.7} />
+              </mesh>
+            </Float>
             {isExp && (
-              <Html position={[off[0], off[1] + 0.35, off[2]]} center style={{ pointerEvents: 'none' }}>
-                <div style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', boxShadow: '0 0 20px rgba(0,255,255,0.08)', padding: '8px 14px', fontFamily: "'Inter',sans-serif", minWidth: '120px' }}>
-                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '8px', letterSpacing: '1px', textTransform: 'uppercase' }}>{b.label}</div>
-                  <div style={{ color, fontSize: '13px', fontWeight: 700, marginTop: '2px' }}>{b.value}</div>
+              <Html position={[off[0], off[1] + 1.2, off[2]]} center distanceFactor={15} style={{ pointerEvents: 'none' }}>
+                <div style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(24px)', border: `1px solid ${color}60`, borderRadius: '12px', boxShadow: `0 0 35px ${color}40`, padding: '0.8vw 1.2vw', fontFamily: "'Space Grotesk','Inter',sans-serif", minWidth: 'clamp(180px, 15vw, 250px)' }}>
+                  <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 'clamp(10px, 0.8vw, 16px)', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '4px' }}>{b.label}</div>
+                  <div style={{ color, fontSize: 'clamp(16px, 1.4vw, 26px)', fontWeight: 700, marginBottom: b.details ? '10px' : '0', textShadow: `0 0 15px ${color}` }}>{b.value}</div>
+                  
+                  {b.details && (
+                    <div style={{ borderTop: `1px solid ${color}30`, paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {b.details.map((desc, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', fontSize: 'clamp(10px, 0.8vw, 14px)', color: 'rgba(255,255,255,0.85)' }}>
+                          <span style={{ color, marginTop: '2px', fontSize: '10px' }}>▶</span>
+                          <span style={{ lineHeight: 1.4, wordBreak: 'break-word', whiteSpace: 'normal', fontFamily: "'Inter', sans-serif" }}>{desc}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </Html>
             )}
@@ -94,21 +167,35 @@ export default function PipelineNode({
       })}
 
       {isScorecard && isVisible && (
-        <Html position={[0, -1.8, 0]} center style={{ pointerEvents: 'none' }}>
-          <div style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(20px)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: '14px', boxShadow: '0 0 40px rgba(251,191,36,0.08)', padding: '16px 22px', fontFamily: "'Inter',sans-serif", width: '280px' }}>
-            <div style={{ color: '#FBBf24', fontSize: '9px', fontWeight: 700, letterSpacing: '2px', borderBottom: '1px solid rgba(251,191,36,0.12)', paddingBottom: '6px', marginBottom: '8px' }}>🤖 AURAOPS — RELEASE REPORT</div>
-            <div style={{ color: '#50ffb0', fontSize: '12px', fontWeight: 700, marginBottom: '4px' }}>✅ APPROVED — 91% confidence</div>
-            <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '8px', marginBottom: '10px', lineHeight: 1.4 }}>All vulnerabilities patched. Carbon optimized. Tests passed.</div>
-            {[{ l: '🔐 Security', v: 84, c: '#F97066' }, { l: '🌱 Eco', v: 82, c: '#10B981' }].map(x => (
-              <div key={x.l} style={{ marginBottom: '5px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#667', fontSize: '8px' }}>{x.l}</span><span style={{ color: x.c, fontSize: '10px', fontWeight: 700 }}>{x.v}/100</span></div>
-                <div style={{ height: '2px', background: 'rgba(255,255,255,0.04)', borderRadius: '1px' }}><div style={{ width: `${x.v}%`, height: '100%', background: x.c, borderRadius: '1px' }} /></div>
+        <Html position={[r + 1, 0, 0]} distanceFactor={15} style={{ pointerEvents: 'none', transform: 'translate3d(0, -50%, 0)' }}>
+          <div style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(30px)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: '16px', boxShadow: '0 0 50px rgba(251,191,36,0.1)', padding: '1.5vw 2vw', fontFamily: "'Inter',sans-serif", width: 'clamp(320px, 30vw, 450px)', whiteSpace: 'nowrap' }}>
+            <div style={{ color: '#FBBf24', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 800, letterSpacing: '2.5px', borderBottom: '1px solid rgba(251,191,36,0.2)', paddingBottom: '10px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>🏆 AURAOPS SCORECARD</span>
+              <span style={{ background: 'rgba(251,191,36,0.1)', padding: '2px 8px', borderRadius: '12px', fontSize: '10px' }}>AUTO-MERGE</span>
+            </div>
+            
+            <div style={{ color: '#50ffb0', fontSize: 'clamp(18px, 1.5vw, 28px)', fontWeight: 800, marginBottom: '8px', textShadow: '0 0 20px rgba(80,255,176,0.4)' }}>✅ RELEASE APPROVED</div>
+            <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 'clamp(12px, 1vw, 16px)', marginBottom: '16px', lineHeight: 1.5, whiteSpace: 'normal', fontFamily: "'Space Grotesk', sans-serif" }}>Autonomous remediation complete. All high-severity metrics fall within acceptable regulatory and risk thresholds. Zero regressions introduced.</div>
+            
+            <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '12px', marginBottom: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div><div style={{ color: '#8899aa', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Time Saved</div><div style={{ color: '#fff', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700 }}>4 hrs 12m</div></div>
+              <div><div style={{ color: '#8899aa', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Agent Cost</div><div style={{ color: '#fff', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700 }}>$0.014</div></div>
+              <div><div style={{ color: '#8899aa', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Code Patches</div><div style={{ color: '#F97066', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700 }}>3 Critical</div></div>
+              <div><div style={{ color: '#8899aa', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>CO₂ Avoided</div><div style={{ color: '#10B981', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700 }}>2.4 kg /yr</div></div>
+            </div>
+
+            {[{ l: '🛡️ Security Tolerance', v: 84, c: '#F97066' }, { l: '🌱 Sustainability Index', v: 82, c: '#10B981' }].map(x => (
+              <div key={x.l} style={{ marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span style={{ color: '#aab', fontSize: 'clamp(12px, 1vw, 16px)' }}>{x.l}</span><span style={{ color: x.c, fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700, textShadow: `0 0 10px ${x.c}40` }}>{x.v}/100</span></div>
+                <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}><div style={{ width: `${x.v}%`, height: '100%', background: x.c, borderRadius: '3px', boxShadow: `0 0 15px ${x.c}` }} /></div>
               </div>
             ))}
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px', marginTop: '6px', fontSize: '9px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#667' }}>🧪 Tests</span><span style={{ color: '#50ffb0', fontWeight: 700 }}>Passed</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '3px' }}><span style={{ color: '#667' }}>🚀 Deploy</span><span style={{ color: '#06B6D4', fontWeight: 700 }}>auraops-demo.run.app</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '3px' }}><span style={{ color: '#667' }}>📋 Compliance</span><span style={{ color: '#8B5CF6', fontWeight: 700 }}>8/9 passed</span></div>
+            
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px', marginTop: '12px', fontSize: 'clamp(11px, 0.9vw, 14px)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}><span style={{ color: '#8899aa' }}>🤖 Model Reasoning</span><span style={{ color: '#38BDF8', fontWeight: 700 }}>Claude 3.5 Sonnet</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}><span style={{ color: '#8899aa' }}>🧪 Integration Tests</span><span style={{ color: '#50ffb0', fontWeight: 700 }}>142 Passed</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}><span style={{ color: '#8899aa' }}>🚀 Cloud Run Rev</span><span style={{ color: '#06B6D4', fontWeight: 700 }}>auraops-demo-00042</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#8899aa' }}>⚖️ Confidence Score</span><span style={{ color: '#FBBf24', fontWeight: 700 }}>91%</span></div>
             </div>
           </div>
         </Html>
