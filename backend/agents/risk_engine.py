@@ -7,7 +7,7 @@ import re
 import json
 import asyncio
 
-from backend.config import claude, CLAUDE_MODEL, BEST_REGION
+from backend.config import claude, CLAUDE_MODEL, BEST_REGION, gemini_model, track_tokens
 from backend.agents.security_agent import empty_result as _empty_sec_result
 from backend.utils.logger import log
 
@@ -91,19 +91,18 @@ async def run(ctx: dict) -> dict:
                 test_status=test_status,
             )
 
-            response = await asyncio.to_thread(
-                lambda: claude.messages.create(
-                    model=CLAUDE_MODEL, max_tokens=1024,
-                    system=[{
-                        "type": "text",
-                        "text": RISK_SYSTEM_PROMPT,
-                        "cache_control": {"type": "ephemeral"}
-                    }],
-                    messages=[{"role": "user", "content": prompt}],
-                )
+            response_text = await asyncio.to_thread(
+                lambda: gemini_model.generate_content(f"{RISK_SYSTEM_PROMPT}\n\n{prompt}").text
             )
 
-            text = response.content[0].text.strip()
+            class DummyUsage:
+                input_tokens = len(prompt) // 4
+                output_tokens = len(response_text) // 4
+            class DummyResponse:
+                usage = DummyUsage()
+            track_tokens(DummyResponse())
+
+            text = response_text.strip()
             text = re.sub(r"^```(?:json)?\s*", "", text)
             text = re.sub(r"\s*```$", "", text)
             result = json.loads(text)

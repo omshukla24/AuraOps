@@ -89,6 +89,11 @@ async def run_all_agents(payload: dict):
         ctx["val_result"] = p1[2] if not isinstance(p1[2], Exception) else {
             "status": "skipped", "passed": True, "pipeline_url": ""
         }
+        
+        broadcast({"type": "agent_result", "agent": "security", "data": ctx["sec_result"]})
+        broadcast({"type": "agent_result", "agent": "greenops", "data": ctx["eco_result"]})
+        broadcast({"type": "agent_result", "agent": "validation", "data": ctx["val_result"]})
+        
         if isinstance(p1[0], Exception):
             log(f"⚠️  SecurityAgent failed: {p1[0]}")
             ctx["agent_errors"].append("SecurityAgent")
@@ -104,6 +109,7 @@ async def run_all_agents(payload: dict):
         broadcast({"type": "phase_start", "phase": 2, "agents": ["risk"]})
         p2_start = time.time()
         ctx["risk_result"] = await risk_engine.run(ctx)
+        broadcast({"type": "agent_result", "agent": "risk", "data": ctx["risk_result"]})
         ctx["agent_timings"]["risk"] = round(time.time() - p2_start, 1)
 
         # ── Phase 3: Compliance + Deploy (parallel) ──
@@ -121,6 +127,10 @@ async def run_all_agents(payload: dict):
             "markdown": "_Compliance unavailable_", "audit_notes": ""
         }
         ctx["deploy_url"] = p3[1] if not isinstance(p3[1], Exception) else None
+        
+        broadcast({"type": "agent_result", "agent": "compliance", "data": ctx["compliance"]})
+        broadcast({"type": "agent_result", "agent": "deploy", "data": {"deploy_url": ctx["deploy_url"]}})
+        
         if isinstance(p3[0], Exception):
             log(f"⚠️  ComplianceAgent failed: {p3[0]}")
             ctx["agent_errors"].append("ComplianceAgent")
