@@ -27,72 +27,72 @@ export interface NodeDef {
 
 export const INITIAL_NODES: NodeDef[] = [
   {
-    id: 'trigger', label: 'GitLab MR Opened', sublabel: 'Webhook received', pos: [-15, 0, 0], color: '#ffffff', revealAt: -1, isTrigger: true, branches: [],
+    id: 'trigger', label: 'GitLab MR Opened', sublabel: 'Listening', pos: [-15, 0, 0], color: '#ffffff', revealAt: -1, isTrigger: true, branches: [],
     icon: '📡',
     processDesc: 'Listening for incoming webhooks from GitLab REST API. Intercepting Merge Request opened events and extracting commit differences.',
-    logs: ['> Received POST /webhook/gitlab', '> Event: Merge Request #42 Opened', '> Author: @omshukla24', '> Extracted 3 changed files', '> Triggering agent orchestration...']
+    logs: ['> Ready and listening for /webhook', '> Waiting for MR event...', '> Idle']
   },
   {
     id: 'security', label: 'SecurityAgent', sublabel: 'Claude 4.6 Sonnet', pos: [-7, 6, -2], color: '#F97066', revealAt: 15, branches: [
-      { id: 'sec-v', label: 'Vulnerabilities', value: '3 → 0 Patched', details: ['SQL Injection (High): Auto-patched', 'Hardcoded Secret (Critical): Rotated & removed', 'XSS (Med): Sanitized output'], dormant: [0.5, 0.4, 0], expanded: [-1.2, 4.0, 1] },
-      { id: 'sec-s', label: 'Security Score', value: '84/100', details: ['Zero criticals remaining', 'Dependency check: Pass', 'Identity & Access constraint verified'], dormant: [-0.5, 0.3, 0.2], expanded: [-4.2, 1.5, 0] },
-      { id: 'sec-m', label: 'Analysis', value: 'Claude 4.6 Sonnet', details: ['Deep AST scan completed in 1.2s', 'Auto-generated 4 patch candidates', 'Selected optimal structural transformation'], dormant: [0.4, -0.5, -0.5], expanded: [4.5, 3.0, 1.2] },
+      { id: 'sec-v', label: 'Vulnerabilities', value: 'Pending', details: ['Awaiting scan'], dormant: [0.5, 0.4, 0], expanded: [-1.2, 4.0, 1] },
+      { id: 'sec-s', label: 'Security Score', value: 'Pending', details: ['Awaiting scoring'], dormant: [-0.5, 0.3, 0.2], expanded: [-4.2, 1.5, 0] },
+      { id: 'sec-m', label: 'Analysis', value: 'Pending', details: ['Awaiting AST scan'], dormant: [0.4, -0.5, -0.5], expanded: [4.5, 3.0, 1.2] },
     ],
     icon: '🔐',
     processDesc: 'Claude 4.6 Sonnet is conducting SAST/DAST analysis on the modified lines. Searching for credential leaks and hardcoded vulnerabilities.',
-    logs: ['> Target: backend/auth.py', '> Detected hardcoded AWS secret (Line 42)', '> Generating AST syntax tree...', '> Auto-patching vulnerability with Claude', '> Patch successfully verified via linter']
+    logs: ['> Target: codebase', '> generating AST syntax tree...', '> Waiting for agent...']
   },
   {
     id: 'greenops', label: 'GreenOpsAgent', sublabel: 'Carbon API', pos: [-7, -6, 2], color: '#10B981', revealAt: 15, branches: [
-      { id: 'grn-r', label: 'Region', value: 'us-central1 → eu-north1', details: ['Source: us-central1 (623 gCO₂eq/kWh)', 'Target: eu-north1 (24 gCO₂eq/kWh)', 'Latency impact: +12ms (Acceptable)'], dormant: [0.6, -0.6, 0], expanded: [0, -5.0, 2.5] },
-      { id: 'grn-c', label: 'CO₂ Saved', value: '2.4 kg/month', details: ['Optimized infinite loop worker spin', 'Reduced idle CPU draw by 94%', 'Projected annual footprint: -28.8 kg CO₂'], dormant: [-0.6, -0.5, 0.3], expanded: [-4.5, -3.5, 0] },
-      { id: 'grn-e', label: 'Eco Score', value: '82/100', details: ['Compute efficiency: A+', 'Memory bloat: B', 'Idle power draw: A-'], dormant: [0.4, 0.5, 0.5], expanded: [4.5, -3.0, 1.2] },
+      { id: 'grn-r', label: 'Region', value: 'Pending', details: ['Awaiting deployment spec'], dormant: [0.6, -0.6, 0], expanded: [0, -5.0, 2.5] },
+      { id: 'grn-c', label: 'CO₂ Saved', value: 'Pending', details: ['Awaiting profile'], dormant: [-0.6, -0.5, 0.3], expanded: [-4.5, -3.5, 0] },
+      { id: 'grn-e', label: 'Eco Score', value: 'Pending', details: ['Awaiting computation'], dormant: [0.4, 0.5, 0.5], expanded: [4.5, -3.0, 1.2] },
     ],
     icon: '🌱',
     processDesc: 'Analyzing CI/CD infrastructure allocation against real-time API telemetry to optimize power grid usage and eliminate wasted compute.',
-    logs: ['> Profiling pipeline job resource usage', '> CPU utilization idle at 85% during test phase', '> Region us-central1 carbon intensity: high', '> Migrating workloads to europe-north1 (low carbon)', '> Estimated savings: 2.4 kg CO₂/month']
+    logs: ['> Profiling pipeline job resource usage', '> Gathering carbon intensity telemetry', '> Waiting for agent...']
   },
   {
     id: 'validation', label: 'ValidationAgent', sublabel: 'GitLab CI', pos: [1, 0, 0], color: '#38BDF8', revealAt: 35, branches: [
-      { id: 'val-t', label: 'Tests', value: '142/142 Passed ✅', details: ['Test suite: pytest end-to-end', 'Ran 142 headless browser flows', '0 regressions detected post-patch'], dormant: [0.5, 0.6, 0], expanded: [0, 5.0, -1.2] },
-      { id: 'val-d', label: 'Duration', value: '47s', details: ['Parallel runners active: 4', 'Cache hit rate: 92%', 'Saved 4m 12s vs linear build strategy'], dormant: [-0.5, -0.6, 0], expanded: [0, -5.0, 1.2] },
+      { id: 'val-t', label: 'Tests', value: 'Pending', details: ['Awaiting test suite'], dormant: [0.5, 0.6, 0], expanded: [0, 5.0, -1.2] },
+      { id: 'val-d', label: 'Duration', value: 'Pending', details: ['Awaiting run'], dormant: [-0.5, -0.6, 0], expanded: [0, -5.0, 1.2] },
     ],
     icon: '🧪',
     processDesc: 'Running end-to-end integration and unit tests against the generated security fixes in an ephemeral parallel runner.',
-    logs: ['> Provisioning runner: docker+machine', '> Applying patch: auth.py', '> Running pytest e2e_suite/...', '> 142/142 tests passed ✅', '> Total duration: 47 seconds']
+    logs: ['> Provisioning runner: docker+machine', '> Waiting for agent...']
   },
   {
     id: 'risk', label: 'RiskEngine', sublabel: 'Release Authority', pos: [9, 4, -1], color: '#F59E0B', revealAt: 55, branches: [
-      { id: 'rsk-d', label: 'Decision', value: 'APPROVED', details: ['All blocking checks resolved', 'No regressions introduced', 'GreenOps tolerance acceptable'], dormant: [0, 0.7, 0], expanded: [0, 5.0, -1.2] },
-      { id: 'rsk-c', label: 'Confidence', value: '91%', details: ['Claude 4.6 Sonnet structural consensus: 94%', 'Regex/Linter certainty constraint: 100%', 'Historical success baseline weight: 88%'], dormant: [0, -0.6, 0], expanded: [0, -5.0, 1.2] },
+      { id: 'rsk-d', label: 'Decision', value: 'Pending', details: ['Awaiting Phase 1 outputs'], dormant: [0, 0.7, 0], expanded: [0, 5.0, -1.2] },
+      { id: 'rsk-c', label: 'Confidence', value: 'Pending', details: ['Awaiting AI synthesis'], dormant: [0, -0.6, 0], expanded: [0, -5.0, 1.2] },
     ],
     icon: '⚖️',
     processDesc: 'Consolidating AI reports from Security, GreenOps, and Validation to calculate a unified risk tolerance matrix before merge.',
-    logs: ['> Ingesting Security Score (84/100)', '> Ingesting GreenOps Score (82/100)', '> Validating CI pipeline integrity', '> Risk Level: LOW', '> Decision: APPROVED (91% confidence)']
+    logs: ['> Gathering Phase 1 signals', '> Waiting for agent...']
   },
   {
     id: 'compliance', label: 'ComplianceAgent', sublabel: 'SOC2 / GDPR', pos: [17, -4, 1], color: '#8B5CF6', revealAt: 70, branches: [
-      { id: 'cmp-s', label: 'SOC2 Score', value: '88/100', details: ['Data-at-rest encryption: Verified', 'MFA Enforcement on IAM: Verified', 'Immutable Audit Trails: Connected'], dormant: [0.5, 0.5, 0], expanded: [3.0, 3.8, 0] },
-      { id: 'cmp-k', label: 'Checks', value: '8/9 Passed', details: ['Failed: Third-party dependency SBOM signature (low sev)', 'Passed: 8 core regulatory compliance bounds'], dormant: [-0.5, 0.5, 0], expanded: [-3.0, 3.5, 0] },
+      { id: 'cmp-s', label: 'SOC2 Score', value: 'Pending', details: ['Awaiting schema validation'], dormant: [0.5, 0.5, 0], expanded: [3.0, 3.8, 0] },
+      { id: 'cmp-k', label: 'Checks', value: 'Pending', details: ['Awaiting checklist'], dormant: [-0.5, 0.5, 0], expanded: [-3.0, 3.5, 0] },
     ],
     icon: '📋',
     processDesc: 'Verifying regulatory compliance standard adherence across the deployment perimeter (SOC2, HIPAA, GDPR rulesets).',
-    logs: ['> Scanning PII handling in database schemas', '> Verified encryption-at-rest requirements', '> Traceability headers: OK', '> 8/9 automated checks passed', '> Generating compliance artifact report']
+    logs: ['> Scanning schemas', '> Waiting for agent...']
   },
   {
     id: 'deploy', label: 'DeployAgent', sublabel: 'Cloud Run', pos: [25, 2, 0], color: '#06B6D4', revealAt: 85, branches: [
-      { id: 'dep-u', label: 'Deployed', value: 'auraops-demo.run.app', details: ['Container registry push: gcr.io/auraops', 'Revision tagging: auraops-demo-00042', 'Zero-downtime rolling update completed'], dormant: [0.5, 0.5, 0], expanded: [3.0, 3.8, 0] },
-      { id: 'dep-r', label: 'Region', value: 'europe-north1', details: ['Finland (europe-north1) data center', 'Multi-zone redundancy: Active status', 'Sustained load autoscaling limit: 1-10 instances'], dormant: [-0.5, -0.5, 0], expanded: [-3.0, -3.8, 0] },
+      { id: 'dep-u', label: 'Deployed', value: 'Pending', details: ['Awaiting container build'], dormant: [0.5, 0.5, 0], expanded: [3.0, 3.8, 0] },
+      { id: 'dep-r', label: 'Region', value: 'Pending', details: ['Awaiting target'], dormant: [-0.5, -0.5, 0], expanded: [-3.0, -3.8, 0] },
     ],
     icon: '🚀',
     processDesc: 'Executing final infrastructure-as-code deployment to Google Cloud Run utilizing the optimized, risk-approved container artifacts.',
-    logs: ['> Authenticating via Workload Identity', '> Tagging container: auraops-demo:v1.2.4', '> Deploying to europe-north1', '> Routing 100% traffic to new revision', '> Service deployed successfully']
+    logs: ['> Preparing artifacts', '> Waiting for agent...']
   },
   {
     id: 'scorecard', label: 'AuraOps Scorecard', sublabel: 'Release Complete', pos: [33, -2, 0], color: '#FBBf24', revealAt: 98, isScorecard: true, branches: [],
     icon: '🏆',
     processDesc: 'Release pipeline concluded. An aggregated overview of the fully autonomous remediation and deployment cycle.',
-    logs: ['> Pipeline complete', '> Merging MR #42 automatically', '> Commenting remediation summary on GitLab MR', '> Awaiting next trigger event...']
+    logs: ['> Pipeline complete', '> Awaiting next trigger event...']
   },
 ];
 
