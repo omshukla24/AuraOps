@@ -7,6 +7,7 @@ export interface SubBranch {
   id: string;
   label: string;
   value: string;
+  details?: string[];
   dormant: [number, number, number];
   expanded: [number, number, number];
 }
@@ -144,9 +145,20 @@ export default function PipelineNode({
             </Float>
             {isExp && (
               <Html position={[off[0], off[1] + 1.2, off[2]]} center distanceFactor={15} style={{ pointerEvents: 'none' }}>
-                <div style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(16px)', border: `1px solid ${color}50`, borderRadius: '10px', boxShadow: `0 0 25px ${color}30`, padding: '0.6vw 1vw', fontFamily: "'Inter',sans-serif", minWidth: 'clamp(120px, 10vw, 200px)', whiteSpace: 'nowrap' }}>
-                  <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(10px, 0.8vw, 16px)', letterSpacing: '1px', textTransform: 'uppercase' }}>{b.label}</div>
-                  <div style={{ color, fontSize: 'clamp(15px, 1.2vw, 24px)', fontWeight: 700, marginTop: '2px', textShadow: `0 0 10px ${color}` }}>{b.value}</div>
+                <div style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(24px)', border: `1px solid ${color}60`, borderRadius: '12px', boxShadow: `0 0 35px ${color}40`, padding: '0.8vw 1.2vw', fontFamily: "'Space Grotesk','Inter',sans-serif", minWidth: 'clamp(180px, 15vw, 250px)' }}>
+                  <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 'clamp(10px, 0.8vw, 16px)', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '4px' }}>{b.label}</div>
+                  <div style={{ color, fontSize: 'clamp(16px, 1.4vw, 26px)', fontWeight: 700, marginBottom: b.details ? '10px' : '0', textShadow: `0 0 15px ${color}` }}>{b.value}</div>
+                  
+                  {b.details && (
+                    <div style={{ borderTop: `1px solid ${color}30`, paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {b.details.map((desc, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', fontSize: 'clamp(10px, 0.8vw, 14px)', color: 'rgba(255,255,255,0.85)' }}>
+                          <span style={{ color, marginTop: '2px', fontSize: '10px' }}>▶</span>
+                          <span style={{ lineHeight: 1.4, wordBreak: 'break-word', whiteSpace: 'normal', fontFamily: "'Inter', sans-serif" }}>{desc}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </Html>
             )}
