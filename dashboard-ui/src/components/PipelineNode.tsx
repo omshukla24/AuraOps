@@ -85,12 +85,20 @@ export default function PipelineNode({
             <sphereGeometry args={[r * 0.8, 32, 32]} />
             <MeshDistortMaterial ref={fluidMatRef} color={col} emissive={col} emissiveIntensity={0.5} distort={0.5} speed={3} roughness={0.3} transparent opacity={0.8} />
           </mesh>
-          {/* Crystal Clear Glass Box */}
+          
+          {/* Reflective Crystal Glass Box */}
           <RoundedBox args={[r * 2.2, r * 2.2, r * 2.2]} radius={0.1} smoothness={4}>
-            <meshStandardMaterial color={col} transparent opacity={0.25} depthWrite={false} roughness={0.1} metalness={0.9} />
-            <Edges threshold={15}>
-              <lineBasicMaterial attach="material" color={col} transparent opacity={hovered ? 1 : 0.6} toneMapped={false} />
-            </Edges>
+            <meshPhysicalMaterial 
+              color={col} 
+              transparent 
+              opacity={hovered ? 0.3 : 0.4} 
+              depthWrite={false} 
+              roughness={0.1} 
+              metalness={0.2}
+              clearcoat={1.0}
+              clearcoatRoughness={0.1} 
+            />
+            <Edges color={color} />
           </RoundedBox>
         </group>
       </Float>
