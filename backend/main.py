@@ -105,6 +105,38 @@ async def trigger_test(background_tasks: BackgroundTasks):
     return {"status": "accepted", "message": "Demo MR triggered — watch the dashboard!"}
 
 
+@app.post("/api/trigger", response_class=JSONResponse)
+async def api_trigger_manual(request: Request, background_tasks: BackgroundTasks):
+    """Manually trigger the pipeline for a specific Project ID and MR IID."""
+    try:
+        data = await request.json()
+        project_id = data.get("project_id")
+        mr_iid = data.get("mr_iid")
+        
+        if not project_id or not mr_iid:
+            return JSONResponse({"status": "error", "message": "project_id and mr_iid are required"}, status_code=400)
+            
+        mock_payload = {
+            "object_kind": "merge_request",
+            "user": {"username": "manual-trigger"},
+            "project": {"id": project_id},
+            "object_attributes": {
+                "iid": mr_iid,
+                "title": f"Manual Analysis !{mr_iid}",
+                "action": "open",
+                "source_branch": "manual",
+                "target_branch": "main",
+                "source_project_id": project_id,
+            },
+        }
+        background_tasks.add_task(run_all_agents, mock_payload)
+        log(f"🎮 Manual trigger via /api/trigger for {project_id} !{mr_iid}")
+        
+        return {"status": "accepted", "project_id": project_id, "mr_iid": mr_iid}
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
 @app.get("/api/events")
 async def api_events():
     """SSE endpoint for live agent activity feed."""

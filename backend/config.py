@@ -24,7 +24,7 @@ HISTORY_FILE = os.getenv("HISTORY_FILE", "/tmp/auraops_history.json")
 PORT = int(os.getenv("PORT", "8080"))
 
 HEADERS = {"PRIVATE-TOKEN": GITLAB_TOKEN}
-CLAUDE_MODEL = "claude-sonnet-4-20250514"
+CLAUDE_MODEL = "claude-sonnet-4.6-20250514"
 
 # ─────────────────────────────────────────────────────────────────────
 # CARBON INTENSITY (gCO₂eq/kWh by GCP region)
@@ -46,6 +46,11 @@ BEST_REGION = min(CARBON, key=CARBON.get)
 # ─────────────────────────────────────────────────────────────────────
 # CLAUDE CLIENT
 # ─────────────────────────────────────────────────────────────────────
+
+import google.generativeai as genai
+
+genai.configure(api_key=os.getenv("GEMINI_API_KEY", ""))
+gemini_model = genai.GenerativeModel("gemini-2.5-flash")
 
 claude = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
 

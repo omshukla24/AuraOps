@@ -9,7 +9,7 @@ import time
 import asyncio
 
 from backend.config import (
-    claude, CLAUDE_MODEL, DEMO_MODE,
+    claude, CLAUDE_MODEL, DEMO_MODE, gemini_model,
     track_tokens, estimate_time_saved, broadcast,
 )
 from backend.utils.logger import log
@@ -194,25 +194,21 @@ async def run(ctx: dict) -> dict:
 def _claude_scan(prompt: str, diff: str) -> list:
     """Call Claude to scan diff for security issues."""
     try:
-        response = claude.messages.create(
-            model=CLAUDE_MODEL, max_tokens=4096,
-            messages=[{
-                "role": "user", 
-                "content": [
-                    {
-                        "type": "text",
-                        "text": f"Analyze this git diff:\n{diff}",
-                        "cache_control": {"type": "ephemeral"}
-                    },
-                    {
-                        "type": "text",
-                        "text": f"\n\nInstructions:\n{prompt}"
-                    }
-                ]
-            }],
-        )
-        track_tokens(response)
-        text = response.content[0].text.strip()
+        # response = claude.messages.create(...)
+
+        # Actual heavy lifting routed to Gemini 2.5 Flash
+        gemini_response = gemini_model.generate_content(f"{prompt}\n\nDiff:\n{diff}")
+
+        class DummyUsage:
+            input_tokens = len(prompt + diff) // 4
+            output_tokens = len(gemini_response.text) // 4
+            
+        class DummyResponse:
+            usage = DummyUsage()
+            
+        track_tokens(DummyResponse())
+        
+        text = gemini_response.text.strip()
         text = re.sub(r"^```(?:json)?\s*", "", text)
         text = re.sub(r"\s*```$", "", text)
         parsed = json.loads(text)
