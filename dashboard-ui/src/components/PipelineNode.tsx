@@ -168,20 +168,34 @@ export default function PipelineNode({
 
       {isScorecard && isVisible && (
         <Html position={[r + 1, 0, 0]} distanceFactor={15} style={{ pointerEvents: 'none', transform: 'translate3d(0, -50%, 0)' }}>
-          <div style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(20px)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: '14px', boxShadow: '0 0 40px rgba(251,191,36,0.08)', padding: '1.2vw 1.5vw', fontFamily: "'Inter',sans-serif", width: 'clamp(280px, 25vw, 400px)', whiteSpace: 'nowrap' }}>
-            <div style={{ color: '#FBBf24', fontSize: 'clamp(12px, 1vw, 18px)', fontWeight: 700, letterSpacing: '2px', borderBottom: '1px solid rgba(251,191,36,0.12)', paddingBottom: '6px', marginBottom: '8px' }}>🤖 AURAOPS — RELEASE REPORT</div>
-            <div style={{ color: '#50ffb0', fontSize: 'clamp(15px, 1.2vw, 24px)', fontWeight: 700, marginBottom: '6px' }}>✅ APPROVED — 91% confidence</div>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(12px, 1vw, 18px)', marginBottom: '12px', lineHeight: 1.4, whiteSpace: 'normal' }}>All vulnerabilities patched. Infrastructure optimized. Tests passed.</div>
-            {[{ l: '🔐 Security', v: 84, c: '#F97066' }, { l: '🌱 Sustainability', v: 82, c: '#10B981' }].map(x => (
-              <div key={x.l} style={{ marginBottom: '6px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}><span style={{ color: '#8899aa', fontSize: 'clamp(11px, 0.9vw, 16px)' }}>{x.l}</span><span style={{ color: x.c, fontSize: 'clamp(13px, 1.1vw, 20px)', fontWeight: 700 }}>{x.v}/100</span></div>
-                <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px' }}><div style={{ width: `${x.v}%`, height: '100%', background: x.c, borderRadius: '2px' }} /></div>
+          <div style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(30px)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: '16px', boxShadow: '0 0 50px rgba(251,191,36,0.1)', padding: '1.5vw 2vw', fontFamily: "'Inter',sans-serif", width: 'clamp(320px, 30vw, 450px)', whiteSpace: 'nowrap' }}>
+            <div style={{ color: '#FBBf24', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 800, letterSpacing: '2.5px', borderBottom: '1px solid rgba(251,191,36,0.2)', paddingBottom: '10px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>🏆 AURAOPS SCORECARD</span>
+              <span style={{ background: 'rgba(251,191,36,0.1)', padding: '2px 8px', borderRadius: '12px', fontSize: '10px' }}>AUTO-MERGE</span>
+            </div>
+            
+            <div style={{ color: '#50ffb0', fontSize: 'clamp(18px, 1.5vw, 28px)', fontWeight: 800, marginBottom: '8px', textShadow: '0 0 20px rgba(80,255,176,0.4)' }}>✅ RELEASE APPROVED</div>
+            <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 'clamp(12px, 1vw, 16px)', marginBottom: '16px', lineHeight: 1.5, whiteSpace: 'normal', fontFamily: "'Space Grotesk', sans-serif" }}>Autonomous remediation complete. All high-severity metrics fall within acceptable regulatory and risk thresholds. Zero regressions introduced.</div>
+            
+            <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '12px', marginBottom: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div><div style={{ color: '#8899aa', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Time Saved</div><div style={{ color: '#fff', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700 }}>4 hrs 12m</div></div>
+              <div><div style={{ color: '#8899aa', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Agent Cost</div><div style={{ color: '#fff', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700 }}>$0.014</div></div>
+              <div><div style={{ color: '#8899aa', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Code Patches</div><div style={{ color: '#F97066', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700 }}>3 Critical</div></div>
+              <div><div style={{ color: '#8899aa', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>CO₂ Avoided</div><div style={{ color: '#10B981', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700 }}>2.4 kg /yr</div></div>
+            </div>
+
+            {[{ l: '🛡️ Security Tolerance', v: 84, c: '#F97066' }, { l: '🌱 Sustainability Index', v: 82, c: '#10B981' }].map(x => (
+              <div key={x.l} style={{ marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span style={{ color: '#aab', fontSize: 'clamp(12px, 1vw, 16px)' }}>{x.l}</span><span style={{ color: x.c, fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700, textShadow: `0 0 10px ${x.c}40` }}>{x.v}/100</span></div>
+                <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}><div style={{ width: `${x.v}%`, height: '100%', background: x.c, borderRadius: '3px', boxShadow: `0 0 15px ${x.c}` }} /></div>
               </div>
             ))}
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px', marginTop: '8px', fontSize: 'clamp(11px, 0.9vw, 16px)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#8899aa' }}>🧪 Tests</span><span style={{ color: '#50ffb0', fontWeight: 700 }}>Passed ✅</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}><span style={{ color: '#8899aa' }}>🚀 Deploy</span><span style={{ color: '#06B6D4', fontWeight: 700 }}>auraops-demo.run.app</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}><span style={{ color: '#8899aa' }}>📋 Compliance</span><span style={{ color: '#8B5CF6', fontWeight: 700 }}>8/9 passed</span></div>
+            
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px', marginTop: '12px', fontSize: 'clamp(11px, 0.9vw, 14px)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}><span style={{ color: '#8899aa' }}>🤖 Model Reasoning</span><span style={{ color: '#38BDF8', fontWeight: 700 }}>Claude 3.5 Sonnet</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}><span style={{ color: '#8899aa' }}>🧪 Integration Tests</span><span style={{ color: '#50ffb0', fontWeight: 700 }}>142 Passed</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}><span style={{ color: '#8899aa' }}>🚀 Cloud Run Rev</span><span style={{ color: '#06B6D4', fontWeight: 700 }}>auraops-demo-00042</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#8899aa' }}>⚖️ Confidence Score</span><span style={{ color: '#FBBf24', fontWeight: 700 }}>91%</span></div>
             </div>
           </div>
         </Html>
