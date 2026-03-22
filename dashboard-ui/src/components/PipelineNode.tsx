@@ -53,9 +53,9 @@ export default function PipelineNode({
   useFrame(({ clock }, dt) => {
     const target = isVisible ? 1 : 0;
     scaleVal.current += (target - scaleVal.current) * Math.min(1, 1.5 * dt);
-    
+
     if (meshRef.current) meshRef.current.scale.setScalar(Math.max(0.001, scaleVal.current));
-    
+
     if (fluidMatRef.current && isVisible) {
       if (isProcessing) {
         // High visibility pulse for the fluid
@@ -86,24 +86,24 @@ export default function PipelineNode({
             <sphereGeometry args={[r * 0.8, 32, 32]} />
             <MeshDistortMaterial ref={fluidMatRef} color={col} emissive={col} emissiveIntensity={0.5} distort={0.5} speed={3} roughness={0.3} transparent opacity={0.8} />
           </mesh>
-          
+
           {/* Reflective Crystal Glass Box */}
           <RoundedBox args={[r * 2.2, r * 2.2, r * 2.2]} radius={0.1} smoothness={4}>
-            <meshPhysicalMaterial 
-              color={col} 
-              transparent 
-              opacity={hovered ? 0.3 : 0.4} 
-              depthWrite={false} 
-              roughness={0.1} 
+            <meshPhysicalMaterial
+              color={col}
+              transparent
+              opacity={hovered ? 0.3 : 0.4}
+              depthWrite={false}
+              roughness={0.1}
               metalness={0.2}
               clearcoat={1.0}
-              clearcoatRoughness={0.1} 
+              clearcoatRoughness={0.1}
             />
             <Edges color={color} />
           </RoundedBox>
         </group>
       </Float>
-      
+
       {/* Meteor Rings */}
       {isTrigger && isVisible && (
         <group ref={meteorRef}>
@@ -148,7 +148,7 @@ export default function PipelineNode({
                 <div style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(24px)', border: `1px solid ${color}60`, borderRadius: '12px', boxShadow: `0 0 35px ${color}40`, padding: '0.8vw 1.2vw', fontFamily: "'Space Grotesk','Inter',sans-serif", minWidth: 'clamp(180px, 15vw, 250px)' }}>
                   <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 'clamp(10px, 0.8vw, 16px)', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '4px' }}>{b.label}</div>
                   <div style={{ color, fontSize: 'clamp(16px, 1.4vw, 26px)', fontWeight: 700, marginBottom: b.details ? '10px' : '0', textShadow: `0 0 15px ${color}` }}>{b.value}</div>
-                  
+
                   {b.details && (
                     <div style={{ borderTop: `1px solid ${color}30`, paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {b.details.map((desc, idx) => (
@@ -168,15 +168,14 @@ export default function PipelineNode({
 
       {isScorecard && isVisible && (
         <Html position={[r + 1, 0, 0]} distanceFactor={15} style={{ pointerEvents: 'none', transform: 'translate3d(0, -50%, 0)' }}>
-          <div style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(30px)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: '16px', boxShadow: '0 0 50px rgba(251,191,36,0.1)', padding: '1.5vw 2vw', fontFamily: "'Inter',sans-serif", width: 'clamp(320px, 30vw, 450px)', whiteSpace: 'nowrap' }}>
-            <div style={{ color: '#FBBf24', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 800, letterSpacing: '2.5px', borderBottom: '1px solid rgba(251,191,36,0.2)', paddingBottom: '10px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(30px)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: '16px', boxShadow: '0 0 50px rgba(251,191,36,0.1)', padding: '1.8vw 2vw', fontFamily: "'Inter',sans-serif", width: 'clamp(340px, 32vw, 470px)', whiteSpace: 'nowrap' }}>
+            <div style={{ color: '#FBBf24', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 800, letterSpacing: '2.5px', borderBottom: '1px solid rgba(251,191,36,0.2)', paddingBottom: '10px', marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
               <span>🏆 AURAOPS SCORECARD</span>
-              <span style={{ background: 'rgba(251,191,36,0.1)', padding: '2px 8px', borderRadius: '12px', fontSize: '10px' }}>AUTO-MERGE</span>
             </div>
-            
+
             <div style={{ color: '#50ffb0', fontSize: 'clamp(18px, 1.5vw, 28px)', fontWeight: 800, marginBottom: '8px', textShadow: '0 0 20px rgba(80,255,176,0.4)' }}>✅ RELEASE APPROVED</div>
             <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 'clamp(12px, 1vw, 16px)', marginBottom: '16px', lineHeight: 1.5, whiteSpace: 'normal', fontFamily: "'Space Grotesk', sans-serif" }}>Autonomous remediation complete. All high-severity metrics fall within acceptable regulatory and risk thresholds. Zero regressions introduced.</div>
-            
+
             <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '12px', marginBottom: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <div><div style={{ color: '#8899aa', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Time Saved</div><div style={{ color: '#fff', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700 }}>4 hrs 12m</div></div>
               <div><div style={{ color: '#8899aa', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Agent Cost</div><div style={{ color: '#fff', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700 }}>$0.014</div></div>
@@ -190,7 +189,7 @@ export default function PipelineNode({
                 <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}><div style={{ width: `${x.v}%`, height: '100%', background: x.c, borderRadius: '3px', boxShadow: `0 0 15px ${x.c}` }} /></div>
               </div>
             ))}
-            
+
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px', marginTop: '12px', fontSize: 'clamp(11px, 0.9vw, 14px)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}><span style={{ color: '#8899aa' }}>🤖 Model Reasoning</span><span style={{ color: '#38BDF8', fontWeight: 700 }}>Claude 3.5 Sonnet</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}><span style={{ color: '#8899aa' }}>🧪 Integration Tests</span><span style={{ color: '#50ffb0', fontWeight: 700 }}>142 Passed</span></div>

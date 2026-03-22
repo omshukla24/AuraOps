@@ -34,6 +34,41 @@ function TypewriterTerminal({ logs, tourIndex }: { logs: string[], tourIndex: nu
   );
 }
 
+function HistoryWindow() {
+  const events = [
+    { tag: 'MERGED', time: '2m ago', desc: 'Auto-patch applied (MR #42)', color: 'text-emerald-400', border: '#10B981' },
+    { tag: 'REJECTED', time: '1h ago', desc: 'CPU Bloat Regression (Pipeline Blocked)', color: 'text-rose-400', border: '#F43F5E' },
+    { tag: 'ANALYSIS', time: '1h 5m ago', desc: 'Security payload scan initialized', color: 'text-cyan-400', border: '#38BDF8' },
+    { tag: 'MERGED', time: '5h ago', desc: 'Node.js Dependency Bump (MR #41)', color: 'text-emerald-400', border: 'rgba(255,255,255,0.1)' },
+    { tag: 'SYSTEM', time: '1d ago', desc: 'AuraOps Control Plane updated', color: 'text-slate-400', border: 'rgba(255,255,255,0.1)' }
+  ];
+
+  return (
+    <div className="absolute top-4 right-4 md:top-6 md:right-6 z-[100] pointer-events-auto hidden md:block">
+      <div className="bg-gradient-to-br from-slate-900/40 to-black/60 backdrop-blur-md p-4 md:p-5 rounded-2xl border border-white/5 w-[280px] shadow-[0_0_50px_rgba(139,92,246,0.1)] flex flex-col gap-4 transition-all duration-300 hover:bg-slate-900/60 hover:border-white/10 hover:shadow-[0_0_50px_rgba(139,92,246,0.2)] hover:scale-[1.02]">
+        <div className="flex items-center gap-3 border-b border-white/10 pb-3">
+          <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center border border-violet-500/30 shadow-[0_0_15px_rgba(139,92,246,0.4)]">
+            <span className="text-[14px]">📜</span>
+          </div>
+          <h3 className="text-white text-[13px] font-bold tracking-[2px] font-['Space_Grotesk','Inter',sans-serif] uppercase text-violet-300 drop-shadow-[0_0_10px_rgba(139,92,246,0.8)]">Audit Ledger</h3>
+        </div>
+        
+        <div className="flex flex-col gap-4 mt-1">
+          {events.map((item, i) => (
+            <div key={i} className="flex flex-col gap-1.5 border-l-[3px] pl-3 py-1 transition-colors duration-300 hover:border-white/50 cursor-default group" style={{ borderColor: item.border }}>
+              <div className="flex justify-between items-center w-full">
+                <span className={`text-[10px] font-extrabold ${item.color} tracking-[1.5px] uppercase`}>{item.tag}</span>
+                <span className="text-[9px] text-slate-500 font-mono tracking-widest group-hover:text-slate-400 transition-colors uppercase">{item.time}</span>
+              </div>
+              <span className="text-[13px] text-slate-300 leading-snug font-['Inter',sans-serif] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{item.desc}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [tourIndex, setTourIndex] = useState(0);
 
@@ -46,6 +81,8 @@ export default function App() {
         <h1 className="text-xl md:text-3xl font-bold tracking-[6px] text-white font-['Space_Grotesk','Inter',sans-serif] drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]" style={{ textShadow: '0 0 5px #06b6d4, 0 0 15px #06b6d4' }}>AURAOPS</h1>
         <p className="text-[8px] md:text-[10px] tracking-[2px] text-cyan-300 mt-1 uppercase font-['Space_Grotesk','Inter',sans-serif] hidden sm:block drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]">Autonomous Unified Release Authority for Operations</p>
       </div>
+
+      <HistoryWindow />
 
       <Canvas camera={{ position: [0, 0, 30], fov: 45 }} gl={{ antialias: true }}>
         <AuraUniverse tourIndex={tourIndex} onTourIndexChange={setTourIndex} />
