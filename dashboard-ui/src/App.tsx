@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import AuraUniverse, { TOUR_NODES } from './components/AuraUniverse';
+import AuraUniverse, { INITIAL_NODES, type NodeDef } from './components/AuraUniverse';
 import './index.css';
 
 function TypewriterTerminal({ logs, tourIndex }: { logs: string[], tourIndex: number }) {
@@ -71,8 +71,62 @@ function HistoryWindow() {
 
 export default function App() {
   const [tourIndex, setTourIndex] = useState(0);
+  const [nodes, setNodes] = useState<NodeDef[]>(INITIAL_NODES);
 
-  const handleNext = () => setTourIndex(i => Math.min(TOUR_NODES.length - 1, i + 1));
+  useEffect(() => {
+    const source = new EventSource('/api/events');
+    source.onmessage = (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        
+        setNodes((prevNodes) => {
+          const nextNodes = [...prevNodes];
+          
+          if (payload.type === 'pipeline_start') {
+            setTourIndex(1); // Jump to Security
+          } else if (payload.type === 'phase_start' && payload.agents && payload.agents.length > 0) {
+            const agent = payload.agents[0];
+            const idx = nextNodes.findIndex(n => n.id === agent);
+            if (idx !== -1) setTourIndex(idx);
+          } else if (payload.type === 'pipeline_complete') {
+             setTourIndex(nextNodes.findIndex(n => n.id === 'scorecard'));
+          } else if (payload.type === 'agent_result') {
+            const idx = nextNodes.findIndex(n => n.id === payload.agent);
+            if (idx !== -1 && payload.data) {
+              const node = { ...nextNodes[idx] };
+              node.branches = node.branches.map(b => {
+                if (payload.agent === 'security') {
+                  if (b.id === 'sec-v') return { ...b, value: `${payload.data.patches_committed || 0} Patched` };
+                  if (b.id === 'sec-s') return { ...b, value: `${payload.data.score || 0}/100` };
+                } else if (payload.agent === 'greenops') {
+                  if (b.id === 'grn-c') return { ...b, value: `${payload.data.co2_saved || 0} kg` };
+                  if (b.id === 'grn-e') return { ...b, value: `${payload.data.eco_score || 0}/100` };
+                  if (b.id === 'grn-r') return { ...b, value: `${payload.data.old_region || 'us-central1'} → ${payload.data.new_region || 'eu-north1'}` };
+                } else if (payload.agent === 'validation') {
+                  if (b.id === 'val-t') return { ...b, value: payload.data.passed ? 'Passed ✅' : 'Failed ❌' };
+                } else if (payload.agent === 'risk') {
+                  if (b.id === 'rsk-d') return { ...b, value: payload.data.decision || 'UNKNOWN' };
+                  if (b.id === 'rsk-c') return { ...b, value: `${payload.data.confidence || 0}%` };
+                } else if (payload.agent === 'compliance') {
+                  if (b.id === 'cmp-s') return { ...b, value: `${payload.data.soc2_score || 0}/100` };
+                  if (b.id === 'cmp-k') return { ...b, value: payload.data.overall || 'UNKNOWN' };
+                } else if (payload.agent === 'deploy') {
+                  if (b.id === 'dep-u') return { ...b, value: payload.data.deploy_url || "Failed" };
+                }
+                return b;
+              });
+              nextNodes[idx] = node;
+            }
+          }
+          return nextNodes;
+        });
+
+      } catch (err) {}
+    };
+    return () => source.close();
+  }, []);
+
+  const handleNext = () => setTourIndex(i => Math.min(nodes.length - 1, i + 1));
   const handleBack = () => setTourIndex(i => Math.max(0, i - 1));
 
   return (
@@ -85,7 +139,7 @@ export default function App() {
       <HistoryWindow />
 
       <Canvas camera={{ position: [0, 0, 30], fov: 45 }} gl={{ antialias: true }}>
-        <AuraUniverse tourIndex={tourIndex} onTourIndexChange={setTourIndex} />
+        <AuraUniverse nodes={nodes} tourIndex={tourIndex} onTourIndexChange={setTourIndex} />
       </Canvas>
 
       {/* Detailed Process Window Overlay Escaping 3D Projection */}
@@ -95,35 +149,45 @@ export default function App() {
           {/* Header */}
           <div className="flex items-center gap-3">
             <div className="text-xl md:text-2xl bg-white/10 backdrop-blur-sm w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg border border-white/5 shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-              {TOUR_NODES[tourIndex].icon || '⚙️'}
+              {nodes[tourIndex].icon || '⚙️'}
             </div>
             <div className="min-w-0">
-              <h2 className="text-white m-0 text-base md:text-xl font-semibold font-['Inter',sans-serif] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                {TOUR_NODES[tourIndex].label}
+              <h2 className="text-lg md:text-xl font-bold tracking-[2px] md:tracking-[3px] text-white flex items-center gap-2 md:gap-3 uppercase font-['Space_Grotesk','Inter',sans-serif] drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]">
+                {nodes[tourIndex].label}
+                <span className="text-[9px] md:text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 whitespace-nowrap shadow-[0_0_10px_rgba(16,185,129,0.2)]">LIVE</span>
               </h2>
+              <div className="text-slate-400 text-[10px] md:text-xs font-medium tracking-[1px] font-mono mt-0.5 uppercase truncate">
+                {nodes[tourIndex].sublabel}
+              </div>
             </div>
           </div>
           
           {/* Description */}
-          <p className="text-slate-300 text-xs md:text-sm leading-relaxed m-0 font-['Inter',sans-serif] hidden sm:block drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-            {TOUR_NODES[tourIndex].processDesc || "Processing metadata..."}
+          <p className="text-slate-300 text-[11px] md:text-[13px] leading-relaxed font-['Inter',sans-serif]">
+            {nodes[tourIndex].processDesc}
           </p>
           
           {/* Terminal / Logs with Typewriter Effect */}
-          <TypewriterTerminal logs={TOUR_NODES[tourIndex].logs || []} tourIndex={tourIndex} />
+          <TypewriterTerminal logs={nodes[tourIndex].logs || []} tourIndex={tourIndex} />
 
           {/* Navigation */}
-          <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+          <div className="flex gap-2 md:gap-3 mt-1 md:mt-2">
             <button 
               onClick={handleBack} 
               disabled={tourIndex === 0} 
-              style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: tourIndex === 0 ? '#475569' : '#fff', cursor: tourIndex === 0 ? 'default' : 'pointer', border: '1px solid rgba(255,255,255,0.1)', fontSize: '13px', fontWeight: 600, fontFamily: "'Inter', sans-serif", transition: 'all 0.3s ease', boxShadow: tourIndex === 0 ? 'none' : 'inset 0 0 10px rgba(255,255,255,0.05)' }}>
-              &larr; PREV
+              className="flex-1 py-2 md:py-2.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 text-white/70 text-[11px] md:text-[13px] font-bold tracking-widest uppercase transition-all"
+            >
+              PREV
             </button>
             <button 
               onClick={handleNext} 
-              disabled={tourIndex === TOUR_NODES.length - 1} 
-              style={{ flex: 1, padding: '12px', borderRadius: '8px', background: tourIndex === TOUR_NODES.length - 1 ? 'rgba(255,255,255,0.05)' : '#06B6D4', color: tourIndex === TOUR_NODES.length - 1 ? '#475569' : '#000', cursor: tourIndex === TOUR_NODES.length - 1 ? 'default' : 'pointer', border: '1px solid rgba(255,255,255,0.1)', fontSize: '13px', fontWeight: 700, fontFamily: "'Inter', sans-serif", transition: 'all 0.3s ease', boxShadow: tourIndex === TOUR_NODES.length - 1 ? 'none' : '0 0 15px rgba(6,182,212,0.6), inset 0 0 10px rgba(255,255,255,0.4)', textShadow: tourIndex === TOUR_NODES.length - 1 ? 'none' : '0 0 5px rgba(255,255,255,0.5)' }}>
+              disabled={tourIndex === nodes.length - 1} 
+              className={`flex-1 py-2 md:py-2.5 rounded-lg border text-[11px] md:text-[13px] font-bold tracking-widest uppercase transition-all ${
+                tourIndex === nodes.length - 1 
+                  ? 'bg-white/5 border-white/10 text-white/30 cursor-default' 
+                  : 'bg-cyan-500 hover:bg-cyan-400 border-cyan-400/50 text-black shadow-[0_0_15px_rgba(6,182,212,0.6)]'
+              }`}
+            >
               NEXT &rarr;
             </button>
           </div>
