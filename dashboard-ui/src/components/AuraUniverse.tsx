@@ -15,7 +15,7 @@ type FlowState = 'IDLE' | 'SHIFTING_LAYOUT' | 'DRAWING_PIPES' | 'COMPLETE';
 //  NODE DEFINITIONS (Strict Coordinate Spacing)
 // ═══════════════════════════════════════
 
-interface NodeDef {
+export interface NodeDef {
   id: string; label: string; sublabel: string;
   pos: [number, number, number]; color: string;
   revealAt: number; branches: SubBranch[];
@@ -25,7 +25,7 @@ interface NodeDef {
   icon?: string;
 }
 
-const NODES: NodeDef[] = [
+export const INITIAL_NODES: NodeDef[] = [
   {
     id: 'trigger', label: 'GitLab MR Opened', sublabel: 'Webhook received', pos: [-15, 0, 0], color: '#ffffff', revealAt: -1, isTrigger: true, branches: [],
     icon: '📡',
@@ -96,7 +96,7 @@ const NODES: NodeDef[] = [
   },
 ];
 
-export const TOUR_NODES = NODES; // Map exactly to the pipeline array sequence
+export const TOUR_NODES = INITIAL_NODES; // Map exactly to the pipeline array sequence
 
 // ═══════════════════════════════════════
 //  PIPE DEFINITIONS
@@ -122,7 +122,7 @@ const PIPES: PipeDef[] = [
 //  MAIN SCENE
 // ═══════════════════════════════════════
 
-export default function AuraUniverse({ tourIndex, onTourIndexChange }: { tourIndex: number, onTourIndexChange?: (i: number) => void }) {
+export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange }: { nodes: NodeDef[], tourIndex: number, onTourIndexChange?: (i: number) => void }) {
   const [flowState, setFlowState] = useState<FlowState>('IDLE');
   const pipeProgressRef = useRef(0); // 0 to 100
   const [litNodes, setLitNodes] = useState<Set<string>>(new Set(['trigger']));
@@ -167,7 +167,7 @@ export default function AuraUniverse({ tourIndex, onTourIndexChange }: { tourInd
       }
 
       const newLit = new Set(['trigger']);
-      for (const n of NODES) {
+      for (const n of nodes) {
         if (n.revealAt >= 0 && pipeProgressRef.current >= n.revealAt) newLit.add(n.id);
       }
       if (newLit.size !== litNodes.size) setLitNodes(newLit);
@@ -200,11 +200,14 @@ export default function AuraUniverse({ tourIndex, onTourIndexChange }: { tourInd
   // Cinematic Fly-To Animation
   useEffect(() => {
     if (cameraControlsRef.current) {
-      const targetNode = TOUR_NODES[tourIndex];
+      if (flowState === 'IDLE' || flowState === 'SHIFTING_LAYOUT' || tourIndex === 0) return;
+
+      // Once visual pipe drawing completes (or skips immediately), pan to Node index
+      let targetNode = nodes[tourIndex];
       if (!targetNode) return;
 
-      const [tx, ty, tz] = targetNode.pos;
-      const finalX = flowState === 'IDLE' ? tx + 15 : tx;
+      let [tx, ty, tz] = targetNode.pos;
+      const finalX = tx;
 
       const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
@@ -212,7 +215,17 @@ export default function AuraUniverse({ tourIndex, onTourIndexChange }: { tourInd
       let distZ = isMobile ? tz + 25 : tz + 22; // Extended backing distance to fit larger detail boxes
 
       // Feature: Zoom out camera to visually group the Security + GreenOps parallel split
-      if (tourIndex === 1 || tourIndex === 2) {
+      if (tourIndex === 1) {
+        // Special Security/GreenOps Wide Angle View
+        // Find indices of sec/eco instead of hardcoding 1 & 2
+        // Assuming Security and GreenOps are indices 1 and 2
+        const n1 = nodes[1]?.pos || [0,0,0];
+        const n2 = nodes[2]?.pos || [0,0,0];
+        
+        tx = (n1[0] + n2[0]) / 2;
+        ty = (n1[1] + n2[1]) / 2;
+        tz = (n1[2] + n2[2]) / 2;
+        
         camY = isMobile ? -6 : 0; // Look directly at the center of the Y-axis split
         distZ = isMobile ? tz + 38 : tz + 32; // Massive Z pushback to fit both nodes in viewport
       }
@@ -224,15 +237,17 @@ export default function AuraUniverse({ tourIndex, onTourIndexChange }: { tourInd
       let bubblesToExpand = [...(targetNode.branches?.map(b => b.id) || [])];
 
       // Feature: Both parallel branches open simultaneously
-      if (tourIndex === 1 || tourIndex === 2) {
-        bubblesToExpand = [
-          ...TOUR_NODES[1].branches.map(b => b.id),
-          ...TOUR_NODES[2].branches.map(b => b.id)
+      if (tourIndex === 1) {
+        // Expand both branches so they are visible together
+        const multiNodeBubbles = [
+          ...(nodes[1]?.branches || []).map(b => b.id),
+          ...(nodes[2]?.branches || []).map(b => b.id)
         ];
+        bubblesToExpand = multiNodeBubbles;
       }
       setExpandedBubbles(bubblesToExpand);
     }
-  }, [tourIndex, flowState]);
+  }, [tourIndex, flowState, nodes]);
 
   const isProcessing = flowState === 'DRAWING_PIPES';
 
@@ -266,7 +281,7 @@ export default function AuraUniverse({ tourIndex, onTourIndexChange }: { tourInd
         ))}
 
         {/* Pipeline Nodes */}
-        {NODES.map(n => (
+        {nodes.map(n => (
           <PipelineNode
             key={n.id}
             id={n.id}
