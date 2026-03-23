@@ -20,9 +20,20 @@ from backend.utils.gitlab_client import get_file_content, push_commit
 # PROMPTS
 # ─────────────────────────────────────────────────────────────────────
 
-VULN_SCAN_PROMPT = """You are a world-class application security engineer.
-Analyze this git diff for security vulnerabilities.
-For each issue, return a JSON array:
+VULN_SCAN_PROMPT = """You are a world-class application security engineer performing SAST analysis.
+Analyze this code diff for ALL security vulnerabilities including:
+- SQL/NoSQL Injection, Command Injection, Code Injection
+- Cross-Site Scripting (XSS), Cross-Site Request Forgery (CSRF)
+- Path Traversal, Server-Side Request Forgery (SSRF)
+- Insecure Deserialization, XXE
+- Running as root in containers, Dockerfile security issues
+- Exposed ports, network attack surface issues
+- Insecure dependencies, supply chain risks
+- Privilege escalation, broken access control
+
+CRITICAL: For EVERY issue you MUST include "original_code" (the exact vulnerable line(s) as they appear in the file) and "patched_code" (the fixed replacement). Without these fields the vulnerability CANNOT be auto-remediated.
+
+Return a JSON array. Every element MUST have ALL these fields:
 [
   {
     "type": "SQL Injection",
@@ -36,13 +47,17 @@ For each issue, return a JSON array:
   }
 ]
 Severity: 1=low, 5=medium, 8=high, 9-10=critical.
-Return [] if no issues found. Return ONLY the JSON array, no prose."""
+Be thorough — find EVERY vulnerability. Return ONLY the JSON array, no prose."""
 
 SECRETS_SCAN_PROMPT = """You are a security engineer specializing in secrets detection.
-Analyze this git diff for exposed secrets, credentials, and sensitive data.
+Analyze this code diff for ALL exposed secrets, credentials, and sensitive data.
 Look for: API keys, passwords, private keys, database connection strings with credentials,
-OAuth secrets, JWT secrets, hardcoded tokens.
-For each found secret, return a JSON array:
+OAuth secrets, JWT secrets, hardcoded tokens, SSH keys, AWS credentials, cloud provider keys,
+encryption keys, and any sensitive data being logged or exposed.
+
+CRITICAL: For EVERY secret you MUST include "original_code" (the exact line with the secret as it appears in the file) and "patched_code" (the fixed version using environment variables). Without these fields the vulnerability CANNOT be auto-remediated.
+
+Return a JSON array. Every element MUST have ALL these fields:
 [
   {
     "type": "Hardcoded API Key",
@@ -55,7 +70,7 @@ For each found secret, return a JSON array:
     "patched_code": "STRIPE_KEY = os.getenv('STRIPE_KEY', '')"
   }
 ]
-Return [] if no issues found. Return ONLY the JSON array, no prose."""
+Be thorough — find EVERY secret. Return ONLY the JSON array, no prose."""
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -94,7 +109,7 @@ async def run(ctx: dict) -> dict:
     log("🔐 SecurityAgent: Starting analysis")
     broadcast("🔐 SecurityAgent: Scanning for vulnerabilities...")
     agent_start = time.time()
-    diff = (ctx.get("diff") or "")[:10000]
+    diff = (ctx.get("diff") or "")[:30000]
 
     if not diff or not gemini_model:
         log("🔐 SecurityAgent: No diff or no Gemini API key — skipping")
@@ -153,8 +168,27 @@ async def run(ctx: dict) -> dict:
                         regression_test_code.append(test_code)
                         regression_tests_generated += 1
             else:
-                issue["patched"] = False
-                issue["patch_confidence"] = 0
+                # Second pass: try to generate a fix by reading the actual file
+                if issue.get("file") and gemini_model:
+                    generated = await _generate_fix(ctx, issue)
+                    if generated:
+                        patched = await _auto_patch(ctx, issue)
+                        issue["patched"] = patched
+                        if patched:
+                            patches_committed += 1
+                            total_time_saved += issue["time_saved_min"]
+                            broadcast(f"  ✅ Patched {vuln_type} in {issue.get('file', '?')} (2nd pass)")
+                            issue["patch_confidence"] = _calc_patch_confidence(issue)
+                            test_code = _generate_regression_test(issue)
+                            if test_code:
+                                regression_test_code.append(test_code)
+                                regression_tests_generated += 1
+                    else:
+                        issue["patched"] = False
+                        issue["patch_confidence"] = 0
+                else:
+                    issue["patched"] = False
+                    issue["patch_confidence"] = 0
 
         # Commit regression guard tests
         if regression_test_code:
@@ -289,6 +323,62 @@ async def _auto_patch(ctx: dict, issue: dict) -> bool:
         return success
     except Exception as e:
         log(f"  Patch error in {file_path}: {e}")
+        return False
+
+
+async def _generate_fix(ctx: dict, issue: dict) -> bool:
+    """Second-pass: read the actual source file and ask Gemini to generate a specific fix."""
+    file_path = issue.get("file", "")
+    vuln_type = issue.get("type", "")
+    description = issue.get("description", "")
+    line_num = issue.get("line", 0)
+
+    if not file_path:
+        return False
+
+    try:
+        content = get_file_content(ctx["project_id"], file_path, ctx["source_branch"])
+        if not content:
+            log(f"  2nd pass: file {file_path} not found")
+            return False
+
+        # Focus on the area around the reported line
+        lines = content.splitlines()
+        start = max(0, line_num - 10)
+        end = min(len(lines), line_num + 10)
+        snippet = "\n".join(lines[start:end])
+
+        prompt = f"""You are a security engineer. Fix this vulnerability.
+
+Vulnerability: {vuln_type}
+File: {file_path}
+Line: {line_num}
+Description: {description}
+
+Code snippet around the vulnerability:
+```
+{snippet}
+```
+
+Return ONLY a JSON object with exactly these two fields:
+{{"original_code": "the exact vulnerable line(s) as they appear in the file", "patched_code": "the fixed replacement code"}}
+
+The original_code MUST be an exact substring of the file content. Return ONLY the JSON object, no markdown or prose."""
+
+        response = gemini_model.generate_content(prompt)
+        text = response.text.strip()
+        text = re.sub(r"^```(?:json)?\s*", "", text)
+        text = re.sub(r"\s*```$", "", text)
+        fix_data = json.loads(text)
+
+        if fix_data.get("original_code") and fix_data.get("patched_code"):
+            issue["original_code"] = fix_data["original_code"]
+            issue["patched_code"] = fix_data["patched_code"]
+            log(f"  2nd pass: generated fix for {vuln_type} in {file_path}")
+            return True
+        return False
+    except Exception as e:
+        log(f"  2nd pass error for {file_path}: {e}")
         return False
 
 
