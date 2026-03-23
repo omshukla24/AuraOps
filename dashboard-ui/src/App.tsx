@@ -34,14 +34,61 @@ function TypewriterTerminal({ logs, tourIndex }: { logs: string[], tourIndex: nu
   );
 }
 
+function _formatAgo(ts: string): string {
+  if (!ts) return '—';
+  const now = Date.now();
+  const then = new Date(ts).getTime();
+  const diff = Math.floor((now - then) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
 function HistoryWindow() {
-  const events = [
-    { tag: 'MERGED', time: '2m ago', desc: 'Auto-patch applied (MR #42)', color: 'text-emerald-400', border: '#10B981' },
-    { tag: 'REJECTED', time: '1h ago', desc: 'CPU Bloat Regression (Pipeline Blocked)', color: 'text-rose-400', border: '#F43F5E' },
-    { tag: 'ANALYSIS', time: '1h 5m ago', desc: 'Security payload scan initialized', color: 'text-cyan-400', border: '#38BDF8' },
-    { tag: 'MERGED', time: '5h ago', desc: 'Node.js Dependency Bump (MR #41)', color: 'text-emerald-400', border: 'rgba(255,255,255,0.1)' },
-    { tag: 'SYSTEM', time: '1d ago', desc: 'AuraOps Control Plane updated', color: 'text-slate-400', border: 'rgba(255,255,255,0.1)' }
-  ];
+  const [events, setEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const resp = await fetch('/api/history');
+        const data = await resp.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped = data.slice(-5).reverse().map((h: any) => {
+            const decision = h.decision || 'UNKNOWN';
+            const isMerged = decision === 'APPROVE';
+            const isBlocked = decision === 'BLOCK';
+            const patches = h.patches_committed || 0;
+            const elapsed = h.elapsed || 0;
+            const ago = _formatAgo(h.timestamp);
+            const desc = patches > 0
+              ? `Auto-patched ${patches} vulns (MR !${h.mr_iid || '?'})`
+              : isBlocked
+              ? `Release Blocked — ${h.vuln_count || 0} vulns (MR !${h.mr_iid || '?'})`
+              : `Analysis complete in ${elapsed}s (MR !${h.mr_iid || '?'})`;
+            return {
+              tag: isMerged ? 'MERGED' : isBlocked ? 'REJECTED' : 'ANALYSIS',
+              time: ago,
+              desc,
+              color: isMerged ? 'text-emerald-400' : isBlocked ? 'text-rose-400' : 'text-cyan-400',
+              border: isMerged ? '#10B981' : isBlocked ? '#F43F5E' : '#38BDF8',
+            };
+          });
+          setEvents(mapped);
+        }
+      } catch { /* fallback to empty */ }
+    };
+    fetchHistory();
+    const interval = setInterval(fetchHistory, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (events.length === 0) {
+    events.push(
+      { tag: 'SYSTEM', time: 'now', desc: 'AuraOps Control Plane ready', color: 'text-slate-400', border: 'rgba(255,255,255,0.1)' },
+      { tag: 'ANALYSIS', time: '—', desc: 'Awaiting first trigger...', color: 'text-cyan-400', border: '#38BDF8' },
+    );
+  }
 
   return (
     <div className="absolute top-4 right-4 md:top-6 md:right-6 z-[100] pointer-events-auto hidden md:block">

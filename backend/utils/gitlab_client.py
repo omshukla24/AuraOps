@@ -86,28 +86,41 @@ def get_file_content(project_id: int | str, file_path: str, ref: str) -> str | N
 
 
 def push_commit(ctx: dict, file_path: str, new_content: str, commit_message: str) -> bool:
-    """Commit a file change to the MR's source branch."""
+    """Commit a file change to the MR's source branch using the Commits API.
+    Uses /repository/commits which works with write_repository scope."""
     pid_enc = urllib.parse.quote(str(ctx["project_id"]), safe="")
     branch = ctx["source_branch"]
-    encoded_path = urllib.parse.quote(file_path, safe="")
-    url = f"{GITLAB_URL}/api/v4/projects/{pid_enc}/repository/files/{encoded_path}"
+    url = f"{GITLAB_URL}/api/v4/projects/{pid_enc}/repository/commits"
 
     payload = {
         "branch": branch,
-        "content": new_content,
         "commit_message": commit_message,
+        "actions": [
+            {
+                "action": "update",
+                "file_path": file_path,
+                "content": new_content,
+            }
+        ],
     }
 
     try:
-        check = requests.get(f"{url}?ref={branch}", headers=HEADERS, timeout=15)
-        if check.status_code == 200:
-            resp = requests.put(url, headers=HEADERS, json=payload, timeout=30)
-        else:
-            resp = requests.post(url, headers=HEADERS, json=payload, timeout=30)
-
+        resp = requests.post(url, headers=HEADERS, json=payload, timeout=30)
         success = resp.status_code in (200, 201)
-        if not success:
-            log(f"  push_commit failed for {file_path}: {resp.status_code} {resp.text[:100]}")
+        if success:
+            log(f"  ✅ Committed fix to {file_path} on branch {branch}")
+        else:
+            # If update fails (file might be new), try create action
+            if resp.status_code == 400 and "does not exist" in resp.text:
+                payload["actions"][0]["action"] = "create"
+                resp2 = requests.post(url, headers=HEADERS, json=payload, timeout=30)
+                success = resp2.status_code in (200, 201)
+                if success:
+                    log(f"  ✅ Created {file_path} on branch {branch}")
+                else:
+                    log(f"  push_commit failed for {file_path}: {resp2.status_code} {resp2.text[:200]}")
+            else:
+                log(f"  push_commit failed for {file_path}: {resp.status_code} {resp.text[:200]}")
         return success
     except Exception as e:
         log(f"  push_commit error for {file_path}: {e}")
