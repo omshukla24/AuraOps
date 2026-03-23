@@ -75,7 +75,7 @@ async def run(ctx: dict) -> dict:
     test_status = val.get("status", "skipped")
     test_passed = val.get("passed", True)
 
-    if claude:
+    if gemini_model:
         try:
             prompt = RISK_USER_PROMPT.format(
                 mr_title=ctx.get("mr_title", ""),

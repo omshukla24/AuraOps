@@ -11,11 +11,24 @@ from backend.config import GITLAB_URL, HEADERS
 from backend.utils.logger import log
 
 
-def get_mr_diff(project_id: int, mr_iid: int) -> str:
+def _get_with_fallback(url: str, timeout: int = 30) -> requests.Response:
+    """GET with auth headers; fallback to unauthenticated for public repos."""
+    resp = requests.get(url, headers=HEADERS, timeout=timeout)
+    if resp.status_code in (401, 403, 404) and HEADERS.get("PRIVATE-TOKEN"):
+        log(f"  Auth rejected ({resp.status_code}), retrying unauthenticated...")
+        fallback = requests.get(url, timeout=timeout)
+        if fallback.status_code == 200:
+            log(f"  Public unauthenticated GET succeeded!")
+            return fallback
+    return resp
+
+
+def get_mr_diff(project_id: int | str, mr_iid: int) -> str:
     """Fetch the full MR diff from GitLab."""
-    url = f"{GITLAB_URL}/api/v4/projects/{project_id}/merge_requests/{mr_iid}/changes"
+    pid_enc = urllib.parse.quote(str(project_id), safe="")
+    url = f"{GITLAB_URL}/api/v4/projects/{pid_enc}/merge_requests/{mr_iid}/changes"
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=30)
+        resp = _get_with_fallback(url, timeout=30)
         if resp.status_code != 200:
             log(f"  get_mr_diff failed: {resp.status_code}")
             return ""
@@ -27,7 +40,7 @@ def get_mr_diff(project_id: int, mr_iid: int) -> str:
             import time
             log("  get_mr_diff: changes empty, retrying in 3 seconds...")
             time.sleep(3)
-            resp = requests.get(url, headers=HEADERS, timeout=30)
+            resp = _get_with_fallback(url, timeout=30)
             data = resp.json() if resp.status_code == 200 else {}
             changes = data.get("changes", [])
 
@@ -42,11 +55,12 @@ def get_mr_diff(project_id: int, mr_iid: int) -> str:
         return ""
 
 
-def get_changed_files(project_id: int, mr_iid: int) -> list:
+def get_changed_files(project_id: int | str, mr_iid: int) -> list:
     """Get list of changed file paths in the MR."""
-    url = f"{GITLAB_URL}/api/v4/projects/{project_id}/merge_requests/{mr_iid}/changes"
+    pid_enc = urllib.parse.quote(str(project_id), safe="")
+    url = f"{GITLAB_URL}/api/v4/projects/{pid_enc}/merge_requests/{mr_iid}/changes"
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=30)
+        resp = _get_with_fallback(url, timeout=30)
         if resp.status_code != 200:
             return []
         data = resp.json()
@@ -55,12 +69,13 @@ def get_changed_files(project_id: int, mr_iid: int) -> list:
         return []
 
 
-def get_file_content(project_id: int, file_path: str, ref: str) -> str | None:
+def get_file_content(project_id: int | str, file_path: str, ref: str) -> str | None:
     """Fetch file content from GitLab repository. Returns None on 404."""
+    pid_enc = urllib.parse.quote(str(project_id), safe="")
     encoded_path = urllib.parse.quote(file_path, safe="")
-    url = f"{GITLAB_URL}/api/v4/projects/{project_id}/repository/files/{encoded_path}?ref={ref}"
+    url = f"{GITLAB_URL}/api/v4/projects/{pid_enc}/repository/files/{encoded_path}?ref={ref}"
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=30)
+        resp = _get_with_fallback(url, timeout=30)
         if resp.status_code != 200:
             return None
         data = resp.json()
@@ -72,10 +87,10 @@ def get_file_content(project_id: int, file_path: str, ref: str) -> str | None:
 
 def push_commit(ctx: dict, file_path: str, new_content: str, commit_message: str) -> bool:
     """Commit a file change to the MR's source branch."""
-    project_id = ctx["project_id"]
+    pid_enc = urllib.parse.quote(str(ctx["project_id"]), safe="")
     branch = ctx["source_branch"]
     encoded_path = urllib.parse.quote(file_path, safe="")
-    url = f"{GITLAB_URL}/api/v4/projects/{project_id}/repository/files/{encoded_path}"
+    url = f"{GITLAB_URL}/api/v4/projects/{pid_enc}/repository/files/{encoded_path}"
 
     payload = {
         "branch": branch,
@@ -99,9 +114,10 @@ def push_commit(ctx: dict, file_path: str, new_content: str, commit_message: str
         return False
 
 
-def post_comment(project_id: int, mr_iid: int, body: str) -> bool:
+def post_comment(project_id: int | str, mr_iid: int, body: str) -> bool:
     """Post a comment to a GitLab merge request."""
-    url = f"{GITLAB_URL}/api/v4/projects/{project_id}/merge_requests/{mr_iid}/notes"
+    pid_enc = urllib.parse.quote(str(project_id), safe="")
+    url = f"{GITLAB_URL}/api/v4/projects/{pid_enc}/merge_requests/{mr_iid}/notes"
     try:
         resp = requests.post(url, headers=HEADERS, json={"body": body}, timeout=30)
         success = resp.status_code == 201

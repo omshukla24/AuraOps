@@ -49,8 +49,10 @@ BEST_REGION = min(CARBON, key=CARBON.get)
 
 import google.generativeai as genai
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY", ""))
-gemini_model = genai.GenerativeModel("gemini-2.5-flash")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+genai.configure(api_key=GEMINI_API_KEY)
+gemini_model = genai.GenerativeModel("gemini-2.5-flash") if GEMINI_API_KEY else None
+GEMINI_READY = bool(GEMINI_API_KEY)
 
 claude = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
 
@@ -109,31 +111,37 @@ def estimate_time_saved(vuln_type: str) -> float:
 
 
 # ─────────────────────────────────────────────────────────────────────
-# SSE EVENT QUEUE (live dashboard feed)
+# SSE EVENT QUEUE (live dashboard feed) — Pub/Sub for multiple clients
 # ─────────────────────────────────────────────────────────────────────
 
-_event_queue = queue_mod.Queue(maxsize=500)
+_event_queues = []
 
+def subscribe_queue():
+    """Create a new queue for a client and return it."""
+    q = queue_mod.Queue(maxsize=500)
+    _event_queues.append(q)
+    return q
+
+def remove_queue(q):
+    """Remove a disconnected client's queue."""
+    if q in _event_queues:
+        _event_queues.remove(q)
 
 def broadcast(msg):
-    """Push event to SSE queue for live dashboard. Accepts str or dict."""
+    """Push event to all connected SSE clients."""
     if isinstance(msg, dict):
         evt = {**msg, "timestamp": datetime.now(timezone.utc).isoformat()}
     else:
         evt = {"type": "log", "message": str(msg), "timestamp": datetime.now(timezone.utc).isoformat()}
-    try:
-        _event_queue.put_nowait(evt)
-    except queue_mod.Full:
+    for q in list(_event_queues):
         try:
-            _event_queue.get_nowait()
-            _event_queue.put_nowait(evt)
-        except Exception:
+            q.put_nowait(evt)
+        except queue_mod.Full:
             pass
 
-
 def get_event_queue():
-    """Return the SSE event queue (for the API route)."""
-    return _event_queue
+    """Backward compat: creates a new subscription."""
+    return subscribe_queue()
 
 
 # ─────────────────────────────────────────────────────────────────────

@@ -164,6 +164,11 @@ curl -X POST https://auraops-735853806237.europe-north1.run.app/trigger-test
 ANTHROPIC_API_KEY=your-claude-api-key
 GITLAB_TOKEN=your-gitlab-personal-access-token
 GITLAB_URL=https://gitlab.com
+
+# --- Google Cloud Run Deployment (Optional) ---
+# If you leave GCP_PROJECT_ID blank, the DeployAgent will safely bypass real deployment 
+# and return a mock URL to speed up UI demos and prevent unexpected billing charges.
+# To genuinely deploy auto-remediated containers to Google Cloud, provide your real Project ID:
 GCP_PROJECT_ID=your-gcp-project-id
 DEPLOY_REGION=europe-north1
 ```

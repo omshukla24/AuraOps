@@ -122,7 +122,7 @@ const PIPES: PipeDef[] = [
 //  MAIN SCENE
 // ═══════════════════════════════════════
 
-export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange }: { nodes: NodeDef[], tourIndex: number, onTourIndexChange?: (i: number) => void }) {
+export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scorecardData }: { nodes: NodeDef[], tourIndex: number, onTourIndexChange?: (i: number) => void, scorecardData?: any }) {
   const [flowState, setFlowState] = useState<FlowState>('IDLE');
   const pipeProgressRef = useRef(0); // 0 to 100
   const [litNodes, setLitNodes] = useState<Set<string>>(new Set(['trigger']));
@@ -298,6 +298,7 @@ export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange }: { 
             onToggleBubble={toggleBubble}
             onTriggerClick={startFlow}
             showClickHint={flowState === 'IDLE'}
+            scorecardData={n.isScorecard ? scorecardData : undefined}
           />
         ))}
       </group>

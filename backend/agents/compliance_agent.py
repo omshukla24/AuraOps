@@ -6,7 +6,7 @@ import re
 import json
 import asyncio
 
-from backend.config import claude, CLAUDE_MODEL, gemini_model, track_tokens
+from backend.config import CLAUDE_MODEL, gemini_model, track_tokens
 from backend.agents.security_agent import empty_result as _empty_sec_result
 from backend.utils.logger import log
 
@@ -50,25 +50,25 @@ async def run(ctx: dict) -> dict:
         for v in sec["vulns"][:5]:
             security_summary += f"\n- {v.get('type', 'Unknown')}: {v.get('description', '')}"
 
-    if claude:
+    if gemini_model:
         try:
             prompt = COMPLIANCE_PROMPT.format(
                 diff_summary=diff_summary,
                 security_summary=security_summary,
             )
 
-            response_text = await asyncio.to_thread(
-                lambda: gemini_model.generate_content(prompt).text
-            )
-
+            # Route legacy Claude payload logic to Gemini 2.5 Flash
+            log("📋 ComplianceAgent: Invoking Gemini for SOC2 schema")
+            gemini_response = gemini_model.generate_content(prompt)
+            
             class DummyUsage:
                 input_tokens = len(prompt) // 4
-                output_tokens = len(response_text) // 4
+                output_tokens = len(gemini_response.text) // 4
             class DummyResponse:
                 usage = DummyUsage()
             track_tokens(DummyResponse())
 
-            text = response_text.strip()
+            text = gemini_response.text.strip()
             text = re.sub(r"^```(?:json)?\s*", "", text)
             text = re.sub(r"\s*```$", "", text)
             result = json.loads(text)

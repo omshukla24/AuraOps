@@ -138,17 +138,23 @@ async def api_trigger_manual(request: Request, background_tasks: BackgroundTasks
 
 
 @app.get("/api/events")
-async def api_events():
+async def api_events(request: Request):
     """SSE endpoint for live agent activity feed."""
     async def event_stream():
-        event_queue = get_event_queue()
-        while True:
-            try:
-                evt = event_queue.get_nowait()
-                yield f"data: {json.dumps(evt)}\n\n"
-            except queue_mod.Empty:
-                yield f"data: {json.dumps({'type': 'heartbeat'})}\n\n"
-                await asyncio.sleep(1)
+        from backend.config import subscribe_queue, remove_queue
+        event_queue = subscribe_queue()
+        try:
+            while True:
+                if await request.is_disconnected():
+                    break
+                try:
+                    evt = event_queue.get_nowait()
+                    yield f"data: {json.dumps(evt)}\n\n"
+                except queue_mod.Empty:
+                    yield f"data: {json.dumps({'type': 'heartbeat'})}\n\n"
+                    await asyncio.sleep(0.5)
+        finally:
+            remove_queue(event_queue)
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 

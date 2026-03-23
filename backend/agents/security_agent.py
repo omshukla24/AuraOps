@@ -9,7 +9,7 @@ import time
 import asyncio
 
 from backend.config import (
-    claude, CLAUDE_MODEL, DEMO_MODE, gemini_model,
+    CLAUDE_MODEL, gemini_model,
     track_tokens, estimate_time_saved, broadcast,
 )
 from backend.utils.logger import log
@@ -96,8 +96,8 @@ async def run(ctx: dict) -> dict:
     agent_start = time.time()
     diff = (ctx.get("diff") or "")[:10000]
 
-    if not diff or (not claude and not DEMO_MODE):
-        log("🔐 SecurityAgent: No diff or no Claude API key — skipping")
+    if not diff or not gemini_model:
+        log("🔐 SecurityAgent: No diff or no Gemini API key — skipping")
         return empty_result()
 
     try:

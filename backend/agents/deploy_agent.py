@@ -28,7 +28,8 @@ async def run(ctx: dict) -> str | None:
 
     if not GCP_PROJECT_ID:
         mock_url = "https://auraops-demo.run.app"
-        log(f"🚀 DeployAgent: No GCP project — returning mock URL: {mock_url}")
+        log(f"🚀 DeployAgent: No GCP project — simulating deployment delay: {mock_url}")
+        await asyncio.sleep(8)
         return mock_url
 
     service_name = "auraops"
