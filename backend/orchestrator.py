@@ -180,19 +180,8 @@ async def run_all_agents(payload: dict):
 
         decision = ctx['risk_result'].get('decision', 'UNKNOWN')
         log(f"✅ AuraOps completed MR !{ctx['mr_iid']} in {elapsed}s — {decision}")
-        broadcast({"type": "pipeline_complete", "mr_iid": ctx['mr_iid'],
-                    "data": {
-                        "decision": decision,
-                        "confidence": ctx['risk_result'].get('confidence', 0),
-                        "sec_score": ctx['sec_result'].get('score', 0),
-                        "eco_score": ctx['eco_result'].get('eco_score', 0),
-                        "patches": ctx['sec_result'].get('patches_committed', 0),
-                        "co2_saved": ctx['eco_result'].get('co2_saved', 0),
-                        "time_saved": ctx['sec_result'].get('time_saved_min', 0),
-                        "tests_passed": ctx['val_result'].get('passed', True),
-                        "cost": ctx.get('token_cost', {}).get('estimated_cost', 0),
-                        "elapsed": elapsed,
-                    }})
+        broadcast({"type": "pipeline_complete", "mr_iid": ctx['mr_iid'], "decision": decision,
+                    "elapsed": elapsed, "confidence": ctx['risk_result'].get('confidence', 0)})
 
     except Exception as e:
         elapsed = round(time.time() - start_time)

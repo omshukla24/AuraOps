@@ -190,6 +190,77 @@ async def run(ctx: dict) -> dict:
                     issue["patched"] = False
                     issue["patch_confidence"] = 0
 
+        # ── RE-SCAN LOOP: Keep scanning until clean (max 2 extra passes) ──
+        for rescan_pass in range(1, 3):
+            if patches_committed == 0:
+                break  # No patches made in first pass, re-scanning won't help
+
+            broadcast(f"🔄 Re-scanning after {patches_committed} patches (pass {rescan_pass + 1})...")
+            log(f"  Re-scan pass {rescan_pass + 1}: re-reading patched files")
+
+            # Re-read the diff/files after patches were committed
+            changed_files = ctx.get("changed_files") or []
+            rescan_content = ""
+            for f in changed_files[:5]:  # Scan up to 5 changed files
+                file_content = get_file_content(ctx["project_id"], f, ctx["source_branch"])
+                if file_content:
+                    rescan_content += f"\n\n--- FILE: {f} ---\n{file_content[:5000]}"
+
+            if not rescan_content:
+                break
+
+            rescan_results = await asyncio.to_thread(
+                _claude_scan,
+                VULN_SCAN_PROMPT + "\n\nIMPORTANT: Only report NEW vulnerabilities not already fixed.",
+                rescan_content[:30000]
+            )
+            rescan_secrets = await asyncio.to_thread(
+                _claude_scan,
+                SECRETS_SCAN_PROMPT + "\n\nIMPORTANT: Only report NEW secrets not already fixed.",
+                rescan_content[:30000]
+            )
+
+            new_issues = []
+            if isinstance(rescan_results, list):
+                new_issues.extend(rescan_results)
+            if isinstance(rescan_secrets, list):
+                new_issues.extend(rescan_secrets)
+
+            if not new_issues:
+                broadcast(f"🔐 Re-scan pass {rescan_pass + 1}: No more vulnerabilities ✅")
+                break
+
+            broadcast(f"🔐 Re-scan pass {rescan_pass + 1}: Found {len(new_issues)} remaining — patching...")
+            new_patches_this_pass = 0
+            for issue in new_issues:
+                vuln_type = issue.get("type", "Unknown")
+                issue["time_saved_min"] = estimate_time_saved(vuln_type)
+
+                if issue.get("original_code") and issue.get("patched_code"):
+                    patched = await _auto_patch(ctx, issue)
+                    issue["patched"] = patched
+                    if patched:
+                        patches_committed += 1
+                        new_patches_this_pass += 1
+                        total_time_saved += issue["time_saved_min"]
+                        broadcast(f"  ✅ Patched {vuln_type} in {issue.get('file', '?')} (pass {rescan_pass + 1})")
+                        issue["patch_confidence"] = _calc_patch_confidence(issue)
+                elif issue.get("file") and gemini_model:
+                    generated = await _generate_fix(ctx, issue)
+                    if generated:
+                        patched = await _auto_patch(ctx, issue)
+                        issue["patched"] = patched
+                        if patched:
+                            patches_committed += 1
+                            new_patches_this_pass += 1
+                            total_time_saved += issue["time_saved_min"]
+                            broadcast(f"  ✅ Patched {vuln_type} in {issue.get('file', '?')} (2nd pass, pass {rescan_pass + 1})")
+
+                all_issues.append(issue)
+
+            if new_patches_this_pass == 0:
+                break  # No progress, stop re-scanning
+
         # Commit regression guard tests
         if regression_test_code:
             test_file_content = _build_regression_test_file(regression_test_code)
