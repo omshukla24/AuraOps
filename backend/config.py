@@ -6,7 +6,10 @@ import os
 import queue as queue_mod
 from datetime import datetime, timezone
 
-import anthropic
+try:
+    import anthropic
+except Exception:
+    anthropic = None
 from dotenv import load_dotenv
 
 # ─────────────────────────────────────────────────────────────────────
@@ -44,17 +47,43 @@ CARBON = {
 BEST_REGION = min(CARBON, key=CARBON.get)
 
 # ─────────────────────────────────────────────────────────────────────
-# CLAUDE CLIENT
+# GEMINI CLIENT (using google-genai SDK)
 # ─────────────────────────────────────────────────────────────────────
 
-import google.generativeai as genai
-
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-genai.configure(api_key=GEMINI_API_KEY)
-gemini_model = genai.GenerativeModel("gemini-2.5-flash") if GEMINI_API_KEY else None
+gemini_model = None
 GEMINI_READY = bool(GEMINI_API_KEY)
 
-claude = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
+if GEMINI_API_KEY:
+    try:
+        from google import genai as _genai
+        _gemini_client = _genai.Client(api_key=GEMINI_API_KEY)
+
+        class _GeminiModelWrapper:
+            """Wrapper around google-genai Client to provide .generate_content()"""
+            def __init__(self, client):
+                self._client = client
+                self._model = "gemini-2.5-flash"
+
+            def generate_content(self, prompt):
+                response = self._client.models.generate_content(
+                    model=self._model,
+                    contents=prompt,
+                )
+                return response
+
+        gemini_model = _GeminiModelWrapper(_gemini_client)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        gemini_model = None
+
+claude = None
+if anthropic and ANTHROPIC_API_KEY and ANTHROPIC_API_KEY != "dummy":
+    try:
+        claude = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    except Exception:
+        claude = None
 
 # ─────────────────────────────────────────────────────────────────────
 # TOKEN / COST TRACKING
@@ -64,7 +93,7 @@ _token_usage = {"input": 0, "output": 0, "calls": 0}
 
 
 def track_tokens(response):
-    """Track token usage from a Claude API response."""
+    """Track token usage from an API response."""
     if hasattr(response, 'usage'):
         _token_usage["input"] += getattr(response.usage, 'input_tokens', 0)
         _token_usage["output"] += getattr(response.usage, 'output_tokens', 0)
@@ -72,7 +101,7 @@ def track_tokens(response):
 
 
 def get_token_cost():
-    """Calculate estimated API cost (Claude Sonnet: $3/M input, $15/M output)."""
+    """Calculate estimated API cost."""
     ic = (_token_usage["input"] / 1_000_000) * 3.0
     oc = (_token_usage["output"] / 1_000_000) * 15.0
     return {
@@ -148,4 +177,4 @@ def get_event_queue():
 # DEMO MODE
 # ─────────────────────────────────────────────────────────────────────
 
-DEMO_MODE = False
+DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"

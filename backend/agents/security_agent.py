@@ -219,7 +219,8 @@ def _claude_scan(prompt: str, diff: str) -> list:
 
 
 async def _auto_patch(ctx: dict, issue: dict) -> bool:
-    """Auto-patch a single vulnerability by committing the fix to the MR branch."""
+    """Auto-patch a single vulnerability by committing the fix to the MR branch.
+    Uses fuzzy matching to handle Gemini returning slightly different formatting."""
     file_path = issue.get("file", "")
     original = issue.get("original_code", "")
     patched = issue.get("patched_code", "")
@@ -229,17 +230,62 @@ async def _auto_patch(ctx: dict, issue: dict) -> bool:
 
     try:
         content = get_file_content(ctx["project_id"], file_path, ctx["source_branch"])
-        if content is None or original not in content:
-            log(f"  Patch skip: original_code not found in {file_path}")
+        if content is None:
+            log(f"  Patch skip: file {file_path} not found in repo")
             return False
 
-        new_content = content.replace(original, patched, 1)
+        new_content = None
+
+        # Strategy 1: Exact match
+        if original in content:
+            new_content = content.replace(original, patched, 1)
+
+        # Strategy 2: Stripped whitespace match
+        if new_content is None:
+            original_stripped = original.strip()
+            if original_stripped in content:
+                new_content = content.replace(original_stripped, patched.strip(), 1)
+
+        # Strategy 3: Line-by-line fuzzy search — find the best matching region
+        if new_content is None:
+            orig_lines = [l.strip() for l in original.strip().splitlines() if l.strip()]
+            content_lines = content.splitlines()
+
+            if orig_lines:
+                best_start = -1
+                best_score = 0
+                for i in range(len(content_lines)):
+                    score = 0
+                    for j, orig_line in enumerate(orig_lines):
+                        if i + j < len(content_lines):
+                            content_line = content_lines[i + j].strip()
+                            if orig_line == content_line:
+                                score += 2
+                            elif orig_line in content_line or content_line in orig_line:
+                                score += 1
+                    if score > best_score and score >= len(orig_lines):
+                        best_score = score
+                        best_start = i
+
+                if best_start >= 0:
+                    end_idx = min(best_start + len(orig_lines), len(content_lines))
+                    patched_lines = patched.strip().splitlines()
+                    new_lines = content_lines[:best_start] + patched_lines + content_lines[end_idx:]
+                    new_content = "\n".join(new_lines)
+                    log(f"  Fuzzy match found at line {best_start + 1} in {file_path}")
+
+        if new_content is None or new_content == content:
+            log(f"  Patch skip: could not match original_code in {file_path}")
+            return False
+
         vuln_type = issue.get("type", "security issue")
         commit_msg = f"fix(security): patch {vuln_type} in {file_path} [AuraOps]"
         success = push_commit(ctx, file_path, new_content, commit_msg)
 
         if success:
             log(f"  ✅ Patched {vuln_type} in {file_path}")
+        else:
+            log(f"  ❌ Push failed for {vuln_type} in {file_path}")
         return success
     except Exception as e:
         log(f"  Patch error in {file_path}: {e}")
