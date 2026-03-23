@@ -115,22 +115,44 @@ async def api_trigger_manual(request: Request, background_tasks: BackgroundTasks
         
         if not project_id or not mr_iid:
             return JSONResponse({"status": "error", "message": "project_id and mr_iid are required"}, status_code=400)
-            
+
+        # Fetch real MR details from GitLab API to get correct branch names
+        import requests as req
+        import urllib.parse
+        from backend.config import HEADERS, GITLAB_URL
+        pid_enc = urllib.parse.quote(str(project_id), safe="")
+        mr_url = f"{GITLAB_URL}/api/v4/projects/{pid_enc}/merge_requests/{mr_iid}"
+        mr_resp = req.get(mr_url, headers=HEADERS, timeout=15)
+        
+        source_branch = "main"
+        target_branch = "main"
+        mr_title = f"Manual Analysis !{mr_iid}"
+        
+        if mr_resp.status_code == 200:
+            mr_data = mr_resp.json()
+            source_branch = mr_data.get("source_branch", "main")
+            target_branch = mr_data.get("target_branch", "main")
+            mr_title = mr_data.get("title", mr_title)
+            log(f"  Fetched MR details: source={source_branch}, target={target_branch}")
+        else:
+            log(f"  Could not fetch MR details ({mr_resp.status_code}), using default branch 'main'")
+            source_branch = "main"
+
         mock_payload = {
             "object_kind": "merge_request",
             "user": {"username": "manual-trigger"},
             "project": {"id": project_id},
             "object_attributes": {
                 "iid": mr_iid,
-                "title": f"Manual Analysis !{mr_iid}",
+                "title": mr_title,
                 "action": "open",
-                "source_branch": "manual",
-                "target_branch": "main",
+                "source_branch": source_branch,
+                "target_branch": target_branch,
                 "source_project_id": project_id,
             },
         }
         background_tasks.add_task(run_all_agents, mock_payload)
-        log(f"🎮 Manual trigger via /api/trigger for {project_id} !{mr_iid}")
+        log(f"🎮 Manual trigger via /api/trigger for {project_id} !{mr_iid} (branch: {source_branch})")
         
         return {"status": "accepted", "project_id": project_id, "mr_iid": mr_iid}
     except Exception as e:
