@@ -218,7 +218,8 @@ export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scor
       }
       if (newLit.size !== litNodes.size) setLitNodes(newLit);
 
-      // Auto-advance tour index based on progress
+      // Auto-advance tour index based on progress — only advances FORWARD
+      // Once pipeline is COMPLETE, user can freely navigate with PREV/NEXT
       const autoTourNodes = [
         { idx: 0, at: 0 },
         { idx: 1, at: 15 },
@@ -237,7 +238,8 @@ export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scor
           break;
         }
       }
-      if (tourIndex !== currentStage && onTourIndexChange) {
+      // Only auto-advance forward, never override manual backward navigation
+      if (currentStage > tourIndex && onTourIndexChange) {
         onTourIndexChange(currentStage);
       }
     }
