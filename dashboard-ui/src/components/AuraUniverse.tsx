@@ -223,29 +223,45 @@ export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scor
     }
   });
 
-  // Camera: only do initial fly-to when pipeline starts, then let user freely control
-  const hasInitializedCamera = useRef(false);
+  // Cinematic Fly-To: camera flies to relevant node on tour change AND animation progress
   useEffect(() => {
-    if (cameraControlsRef.current && flowState === 'DRAWING_PIPES' && !hasInitializedCamera.current) {
-      hasInitializedCamera.current = true;
-      // Fly to a good overview position once
+    if (!cameraControlsRef.current) return;
+    if (flowState === 'IDLE' || flowState === 'SHIFTING_LAYOUT') return;
+    if (tourIndex === 0 && flowState !== 'COMPLETE') return;
+
+    const targetNode = nodes[tourIndex];
+    if (!targetNode) return;
+
+    let [tx, ty, tz] = targetNode.pos;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+    let camY = isMobile ? ty - 6 : ty;
+    let distZ = isMobile ? tz + 25 : tz + 22;
+
+    // Wide angle for Security + GreenOps parallel split
+    if (tourIndex === 1 || tourIndex === 2) {
       const n1 = nodes[1]?.pos || [0,0,0];
       const n2 = nodes[2]?.pos || [0,0,0];
-      const tx = (n1[0] + n2[0]) / 2;
-      const ty = (n1[1] + n2[1]) / 2;
-      const tz = (n1[2] + n2[2]) / 2;
-      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-      const distZ = isMobile ? tz + 38 : tz + 32;
-      cameraControlsRef.current.setLookAt(tx, ty, distZ, tx, ty, tz, true);
-      // Expand all branches initially
-      const allBubbles = nodes.flatMap(n => n.branches?.map(b => b.id) || []);
-      setExpandedBubbles(allBubbles);
+      tx = (n1[0] + n2[0]) / 2;
+      ty = (n1[1] + n2[1]) / 2;
+      tz = (n1[2] + n2[2]) / 2;
+      camY = isMobile ? -6 : 0;
+      distZ = isMobile ? tz + 38 : tz + 32;
     }
-    // Reset on idle
-    if (flowState === 'IDLE') {
-      hasInitializedCamera.current = false;
+
+    // Smooth fly to node
+    cameraControlsRef.current.setLookAt(tx, camY, distZ, tx, camY, tz, true);
+
+    // Expand branches for the focused node(s)
+    let bubblesToExpand = [...(targetNode.branches?.map(b => b.id) || [])];
+    if (tourIndex === 1 || tourIndex === 2) {
+      bubblesToExpand = [
+        ...(nodes[1]?.branches || []).map(b => b.id),
+        ...(nodes[2]?.branches || []).map(b => b.id),
+      ];
     }
-  }, [flowState, nodes]);
+    setExpandedBubbles(bubblesToExpand);
+  }, [tourIndex, flowState, nodes]);
 
   const isProcessing = flowState === 'DRAWING_PIPES';
 
