@@ -728,7 +728,31 @@ export default function App() {
       <HistoryWindow />
 
       <Canvas camera={{ position: [0, 0, 30], fov: 45 }} gl={{ antialias: true }}>
-        <AuraUniverse nodes={nodes} tourIndex={tourIndex} onTourIndexChange={setTourIndex} scorecardData={scorecardData} completedAgents={completedAgents} />
+        <AuraUniverse 
+          nodes={nodes} 
+          tourIndex={tourIndex} 
+          onTourIndexChange={setTourIndex} 
+          scorecardData={scorecardData} 
+          completedAgents={completedAgents}
+          onPipelineTrigger={() => {
+            // Reset animation state
+            setTourIndex(0);
+            setNodes(INITIAL_NODES);
+            setCompletedAgents(new Set());
+            setScorecardData(null);
+            // Fire the pipeline
+            fetch('/api/trigger', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                project_id: projectId || '80516674',
+                mr_iid: parseInt(mriid) || 2,
+                source_branch: sourceBranch || 'main',
+                target_branch: 'main'
+              })
+            }).catch(console.error);
+          }}
+        />
       </Canvas>
 
       {/* Detailed Process Window Overlay Escaping 3D Projection */}

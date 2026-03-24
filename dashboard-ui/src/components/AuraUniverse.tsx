@@ -122,7 +122,7 @@ const PIPES: PipeDef[] = [
 //  MAIN SCENE
 // ═══════════════════════════════════════
 
-export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scorecardData, completedAgents }: { nodes: NodeDef[], tourIndex: number, onTourIndexChange?: (i: number) => void, scorecardData?: any, completedAgents?: Set<string> }) {
+export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scorecardData, completedAgents, onPipelineTrigger }: { nodes: NodeDef[], tourIndex: number, onTourIndexChange?: (i: number) => void, scorecardData?: any, completedAgents?: Set<string>, onPipelineTrigger?: () => void }) {
   const [flowState, setFlowState] = useState<FlowState>('IDLE');
   const pipeProgressRef = useRef(0); // 0 to 100
   const [litNodes, setLitNodes] = useState<Set<string>>(new Set(['trigger']));
@@ -136,8 +136,9 @@ export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scor
     if (flowState === 'IDLE') {
       setFlowState('SHIFTING_LAYOUT');
       pipeProgressRef.current = 0;
+      if (onPipelineTrigger) onPipelineTrigger();
     }
-  }, [flowState]);
+  }, [flowState, onPipelineTrigger]);
 
   const toggleBubble = useCallback((id: string) => {
     setExpandedBubbles(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
