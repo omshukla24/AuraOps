@@ -165,21 +165,25 @@ function DiffsPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
-function TriggerModal({ onClose, mriid, setMriid, projectId, setProjectId }: any) {
+function TriggerModal({ onClose, mriid, setMriid, projectId, setProjectId, sourceBranch, setSourceBranch, onRun }: any) {
   const [loading, setLoading] = useState(false);
 
   const handleRun = async () => {
     setLoading(true);
     try {
+      // Reset animation state BEFORE firing trigger so SSE events drive it
+      if (onRun) onRun();
+
       await fetch('/api/trigger', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          project_id: projectId || 'omshukla24/AuraOps',
-          mr_iid: parseInt(mriid) || 42
+          project_id: projectId || '80516674',
+          mr_iid: parseInt(mriid) || 2,
+          source_branch: sourceBranch || 'main',
+          target_branch: 'main'
         })
       });
-      // Optionally reset the local node rendering here, or let the server logic overwrite it
       onClose();
     } catch (e) {
       console.error(e);
@@ -198,7 +202,7 @@ function TriggerModal({ onClose, mriid, setMriid, projectId, setProjectId }: any
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
             className="bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-[13px] font-mono focus:outline-none focus:border-cyan-400"
-            placeholder="omshukla24/AuraOps"
+            placeholder="80516674"
           />
         </div>
         <div className="flex flex-col gap-2">
@@ -208,13 +212,23 @@ function TriggerModal({ onClose, mriid, setMriid, projectId, setProjectId }: any
             value={mriid}
             onChange={(e) => setMriid(e.target.value)}
             className="bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-[13px] font-mono focus:outline-none focus:border-cyan-400"
-            placeholder="42"
+            placeholder="2"
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className="text-[10px] text-cyan-400 font-mono tracking-widest uppercase">Source Branch</label>
+          <input 
+            type="text" 
+            value={sourceBranch}
+            onChange={(e) => setSourceBranch(e.target.value)}
+            className="bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-[13px] font-mono focus:outline-none focus:border-cyan-400"
+            placeholder="test/final-vuln-scan"
           />
         </div>
         <div className="flex gap-3 mt-2">
           <button onClick={onClose} className="flex-1 py-2 text-white/50 hover:bg-white/5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-colors">Cancel</button>
           <button onClick={handleRun} disabled={loading} className="flex-1 py-2 bg-cyan-500 hover:bg-cyan-400 text-black text-[11px] font-bold uppercase tracking-widest rounded-lg transition-colors">
-            {loading ? 'Running...' : 'Run Pipeline'}
+            {loading ? '⏳ Running...' : '▶ Run Pipeline'}
           </button>
         </div>
       </div>
@@ -537,8 +551,9 @@ export default function App() {
   const [showTriggerModal, setShowTriggerModal] = useState(false);
   const [showDiffs, setShowDiffs] = useState(false);
   const [rescanning, setRescanning] = useState(false);
-  const [mriid, setMriid] = useState('42');
-  const [projectId, setProjectId] = useState('omshukla24/AuraOps');
+  const [mriid, setMriid] = useState('2');
+  const [projectId, setProjectId] = useState('80516674');
+  const [sourceBranch, setSourceBranch] = useState('test/final-vuln-scan');
   const [scorecardData, setScorecardData] = useState<any>(null);
   const [completedAgents, setCompletedAgents] = useState<Set<string>>(new Set());
 
@@ -688,6 +703,14 @@ export default function App() {
           onClose={() => setShowTriggerModal(false)}
           mriid={mriid} setMriid={setMriid}
           projectId={projectId} setProjectId={setProjectId}
+          sourceBranch={sourceBranch} setSourceBranch={setSourceBranch}
+          onRun={() => {
+            // Reset animation state so SSE events drive it from step 0
+            setTourIndex(0);
+            setNodes(INITIAL_NODES);
+            setCompletedAgents(new Set());
+            setScorecardData(null);
+          }}
         />
       )}
 
