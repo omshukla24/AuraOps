@@ -249,21 +249,35 @@ function VoiceButton() {
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const playQueueRef = useRef<Float32Array[]>([]);
   const isPlayingRef = useRef(false);
+  const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const playLockRef = useRef(false); // Prevent multiple playNext chains
 
-  // Play queued audio chunks at 24kHz
+  // Play queued audio chunks at 24kHz — single chain only
   const playNext = useCallback(() => {
+    // Prevent concurrent chains
+    if (playLockRef.current) return;
+
     if (!audioCtxRef.current || playQueueRef.current.length === 0) {
       isPlayingRef.current = false;
       return;
     }
+
     isPlayingRef.current = true;
+    playLockRef.current = true;
+
     const chunk = playQueueRef.current.shift()!;
     const buffer = audioCtxRef.current.createBuffer(1, chunk.length, 24000);
     buffer.getChannelData(0).set(chunk);
     const src = audioCtxRef.current.createBufferSource();
     src.buffer = buffer;
     src.connect(audioCtxRef.current.destination);
-    src.onended = () => playNext();
+    currentSourceRef.current = src;
+
+    src.onended = () => {
+      currentSourceRef.current = null;
+      playLockRef.current = false;
+      playNext();
+    };
     src.start();
   }, []);
 
@@ -315,9 +329,14 @@ function VoiceButton() {
         } else if (msg.type === 'speaking_end') {
           setVoiceState('listening');
         } else if (msg.type === 'clear_audio') {
-          // Barge-in: flush playback queue so stale audio stops
+          // Barge-in: stop current playback and flush queue
+          if (currentSourceRef.current) {
+            try { currentSourceRef.current.stop(); } catch {}
+            currentSourceRef.current = null;
+          }
           playQueueRef.current = [];
           isPlayingRef.current = false;
+          playLockRef.current = false;
         } else if (msg.type === 'audio') {
           const raw = atob(msg.data);
           const bytes = new Uint8Array(raw.length);
