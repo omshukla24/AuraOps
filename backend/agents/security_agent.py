@@ -116,12 +116,9 @@ async def run(ctx: dict) -> dict:
         return empty_result()
 
     try:
-        # Run both scans in parallel
-        vuln_task = asyncio.to_thread(_claude_scan, VULN_SCAN_PROMPT, diff)
-        secrets_task = asyncio.to_thread(_claude_scan, SECRETS_SCAN_PROMPT, diff)
-        vuln_results, secrets_results = await asyncio.gather(
-            vuln_task, secrets_task, return_exceptions=True
-        )
+        # Run scans sequentially to avoid double-hitting Gemini rate limits
+        vuln_results = await asyncio.to_thread(_claude_scan, VULN_SCAN_PROMPT, diff)
+        secrets_results = await asyncio.to_thread(_claude_scan, SECRETS_SCAN_PROMPT, diff)
 
         # Merge results
         all_issues = []
@@ -305,32 +302,41 @@ async def run(ctx: dict) -> dict:
 # ─────────────────────────────────────────────────────────────────────
 
 def _claude_scan(prompt: str, diff: str) -> list:
-    """Call Claude to scan diff for security issues."""
-    try:
-        # Actual heavy lifting routed to Gemini 2.5 Flash
-        log(f"  [DEBUG] _claude_scan: sending {len(diff)} chars to Gemini")
-        gemini_response = gemini_model.generate_content(f"{prompt}\n\nDiff:\n{diff}")
+    """Call Gemini to scan diff for security issues — with retry for rate limits."""
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            log(f"  [DEBUG] _claude_scan attempt {attempt + 1}: sending {len(diff)} chars to Gemini")
+            gemini_response = gemini_model.generate_content(f"{prompt}\n\nDiff:\n{diff}")
 
-        class DummyUsage:
-            input_tokens = len(prompt + diff) // 4
-            output_tokens = len(gemini_response.text) // 4
+            class DummyUsage:
+                input_tokens = len(prompt + diff) // 4
+                output_tokens = len(gemini_response.text) // 4
+                
+            class DummyResponse:
+                usage = DummyUsage()
+                
+            track_tokens(DummyResponse())
             
-        class DummyResponse:
-            usage = DummyUsage()
-            
-        track_tokens(DummyResponse())
-        
-        text = gemini_response.text.strip()
-        log(f"  [DEBUG] _claude_scan response length: {len(text)} chars")
-        log(f"  [DEBUG] _claude_scan response preview: {text[:300]}")
-        text = re.sub(r"^```(?:json)?\s*", "", text)
-        text = re.sub(r"\s*```$", "", text)
-        parsed = json.loads(text)
-        log(f"  [DEBUG] _claude_scan parsed {len(parsed) if isinstance(parsed, list) else 'non-list'} items")
-        return parsed if isinstance(parsed, list) else []
-    except (json.JSONDecodeError, Exception) as e:
-        log(f"  [DEBUG] _claude_scan ERROR: {type(e).__name__}: {e}")
-        return []
+            text = gemini_response.text.strip()
+            log(f"  [DEBUG] _claude_scan response length: {len(text)} chars")
+            text = re.sub(r"^```(?:json)?\s*", "", text)
+            text = re.sub(r"\s*```$", "", text)
+            parsed = json.loads(text)
+            log(f"  [DEBUG] _claude_scan parsed {len(parsed) if isinstance(parsed, list) else 'non-list'} items")
+            return parsed if isinstance(parsed, list) else []
+        except Exception as e:
+            error_str = str(e)
+            log(f"  [DEBUG] _claude_scan attempt {attempt + 1} ERROR: {type(e).__name__}: {error_str[:200]}")
+            if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                wait_time = 30 * (attempt + 1)  # 30s, 60s, 90s
+                log(f"  ⏳ Rate limited — waiting {wait_time}s before retry...")
+                import time as _time
+                _time.sleep(wait_time)
+                continue
+            return []  # Non-retryable error
+    log("  [DEBUG] _claude_scan: all retries exhausted")
+    return []
 
 
 async def _auto_patch(ctx: dict, issue: dict) -> bool:
