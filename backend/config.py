@@ -50,7 +50,7 @@ BEST_REGION = min(CARBON, key=CARBON.get)
 # GEMINI CLIENT (using google-genai SDK)
 # ─────────────────────────────────────────────────────────────────────
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyBzUJCZaWkLwgd98ga0fTkAtsOo1nmy1os")
 gemini_model = None
 GEMINI_READY = bool(GEMINI_API_KEY)
 
