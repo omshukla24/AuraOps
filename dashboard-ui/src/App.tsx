@@ -593,7 +593,12 @@ export default function App() {
             const idx = nextNodes.findIndex(n => n.id === agent);
             if (idx !== -1) setTourIndex(idx);
           } else if (payload.type === 'pipeline_complete') {
-             setScorecardData(payload.data || {});
+             setScorecardData({
+               ...(payload.data || {}),
+               decision: payload.decision,
+               confidence: payload.confidence,
+               elapsed: payload.elapsed,
+             });
              setTourIndex(nextNodes.findIndex(n => n.id === 'scorecard'));
              setCompletedAgents(prev => new Set([...prev, 'scorecard']));
           } else if (payload.type === 'agent_result') {

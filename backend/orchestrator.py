@@ -220,8 +220,27 @@ async def run_all_agents(payload: dict):
         decision = ctx['risk_result'].get('decision', 'UNKNOWN')
         log(f"✅ AuraOps completed MR !{ctx['mr_iid']} in {elapsed}s — {decision}")
         _last_ctx = ctx  # Store for rescan/diffs API
-        broadcast({"type": "pipeline_complete", "mr_iid": ctx['mr_iid'], "decision": decision,
-                    "elapsed": elapsed, "confidence": ctx['risk_result'].get('confidence', 0)})
+        broadcast({
+            "type": "pipeline_complete",
+            "mr_iid": ctx['mr_iid'],
+            "decision": decision,
+            "elapsed": elapsed,
+            "confidence": ctx['risk_result'].get('confidence', 0),
+            "data": {
+                "security_score": ctx['sec_result'].get('score', 0),
+                "vuln_count": ctx['sec_result'].get('count', 0),
+                "patches_committed": ctx['sec_result'].get('patches_committed', 0),
+                "critical_count": ctx['sec_result'].get('critical_count', 0),
+                "high_count": ctx['sec_result'].get('high_count', 0),
+                "time_saved_min": ctx['sec_result'].get('time_saved_min', 0),
+                "eco_score": ctx['eco_result'].get('eco_score', 0),
+                "co2_saved": ctx['eco_result'].get('co2_saved', 0),
+                "validation_passed": ctx['val_result'].get('passed', False),
+                "compliance_score": ctx.get('compliance', {}).get('soc2_score', 0),
+                "agent_cost": ctx.get('token_cost', {}).get('estimated_cost', 0),
+                "vulns": ctx['sec_result'].get('vulns', []),
+            },
+        })
 
     except Exception as e:
         elapsed = round(time.time() - start_time)
