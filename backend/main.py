@@ -236,6 +236,71 @@ async def api_diffs():
 
 
 # ─────────────────────────────────────────────────────────────────────
+# TEXT CHAT
+# ─────────────────────────────────────────────────────────────────────
+
+@app.post("/api/chat", response_class=JSONResponse)
+async def api_chat(request: Request):
+    """Chat with AuraOps via text using Gemini."""
+    body = await request.json()
+    user_msg = body.get("message", "").strip()
+    if not user_msg:
+        return {"reply": "Please send a message."}
+
+    from backend.config import GEMINI_API_KEY
+    if not GEMINI_API_KEY:
+        return {"reply": "Gemini API key not configured."}
+
+    try:
+        from google import genai as _genai
+
+        # Build context from last scan
+        context = ""
+        try:
+            from backend.orchestrator import _last_ctx
+            if _last_ctx:
+                sec = _last_ctx.get("sec_result", {})
+                eco = _last_ctx.get("eco_result", {})
+                risk = _last_ctx.get("risk_result", {})
+                context = (
+                    f"\nCurrent pipeline state:"
+                    f"\n- Security score: {sec.get('score', 'N/A')}/100"
+                    f"\n- Vulnerabilities: {sec.get('count', 0)}"
+                    f"\n- Patches committed: {sec.get('patches_committed', 0)}"
+                    f"\n- Eco score: {eco.get('eco_score', 'N/A')}/100"
+                    f"\n- CO2 saved: {eco.get('co2_saved', 0)} kg/yr"
+                    f"\n- Risk decision: {risk.get('decision', 'N/A')}"
+                    f"\n- Confidence: {risk.get('confidence', 'N/A')}%"
+                )
+                vulns = sec.get("vulns", [])
+                if vulns:
+                    context += f"\n- Vulnerability details:"
+                    for v in vulns[:6]:
+                        context += f"\n  • {v.get('type', '?')} in {v.get('file', '?')} (sev {v.get('severity', '?')}, {'patched' if v.get('patched') else 'unpatched'})"
+        except Exception:
+            pass
+
+        system = (
+            "You are AuraOps Chat, the text assistant for AuraOps — an autonomous "
+            "AI-powered release authority. Answer questions about the pipeline, "
+            "vulnerabilities, security patches, carbon optimizations, and deployment. "
+            "Be concise (2-3 sentences max). Use emoji. " + context
+        )
+
+        client = _genai.Client(api_key=GEMINI_API_KEY)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[
+                {"role": "user", "parts": [{"text": system + "\n\nUser: " + user_msg}]}
+            ],
+        )
+        reply_text = response.text or "I couldn't generate a response."
+        return {"reply": reply_text}
+    except Exception as e:
+        return {"reply": f"⚠️ Error: {str(e)[:200]}"}
+
+
+# ─────────────────────────────────────────────────────────────────────
 # VOICE WEBSOCKET
 # ─────────────────────────────────────────────────────────────────────
 

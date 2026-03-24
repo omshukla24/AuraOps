@@ -223,7 +223,7 @@ function TriggerModal({ onClose, mriid, setMriid, projectId, setProjectId }: any
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// VOICE BUTTON — Gemini native audio via WebSocket
+// VOICE BUTTON — Always-on mic, barge-in, bottom-center
 // ═══════════════════════════════════════════════════════════════════
 
 function VoiceButton() {
@@ -233,7 +233,6 @@ function VoiceButton() {
   const streamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const muteRef = useRef(false); // true when model is speaking
   const playQueueRef = useRef<Float32Array[]>([]);
   const isPlayingRef = useRef(false);
 
@@ -256,65 +255,52 @@ function VoiceButton() {
 
   const startVoice = useCallback(async () => {
     try {
-      // Audio context for playback
       const actx = new AudioContext({ sampleRate: 24000 });
       audioCtxRef.current = actx;
 
-      // Get mic stream at 16kHz
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true },
+        audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
       streamRef.current = stream;
 
-      // Create capture context at 16kHz
       const capCtx = new AudioContext({ sampleRate: 16000 });
       const source = capCtx.createMediaStreamSource(stream);
       sourceRef.current = source;
       const processor = capCtx.createScriptProcessor(4096, 1, 1);
       processorRef.current = processor;
 
-      // WebSocket
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const ws = new WebSocket(`${proto}//${window.location.host}/ws/voice`);
       wsRef.current = ws;
 
       ws.onopen = () => {
         setVoiceState('listening');
-        // Start capturing
         source.connect(processor);
         processor.connect(capCtx.destination);
       };
 
+      // Always send audio — never mute (barge-in support)
       processor.onaudioprocess = (e) => {
-        if (muteRef.current || ws.readyState !== WebSocket.OPEN) return;
+        if (ws.readyState !== WebSocket.OPEN) return;
         const float32 = e.inputBuffer.getChannelData(0);
-        // Convert float32 → int16 PCM
         const int16 = new Int16Array(float32.length);
         for (let i = 0; i < float32.length; i++) {
           const s = Math.max(-1, Math.min(1, float32[i]));
           int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
         }
-        // Base64 encode
         const bytes = new Uint8Array(int16.buffer);
         let binary = '';
         for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-        const b64 = btoa(binary);
-        ws.send(JSON.stringify({ type: 'audio', data: b64 }));
+        ws.send(JSON.stringify({ type: 'audio', data: btoa(binary) }));
       };
 
       ws.onmessage = (e) => {
         const msg = JSON.parse(e.data);
         if (msg.type === 'speaking_start') {
-          muteRef.current = true;
           setVoiceState('speaking');
         } else if (msg.type === 'speaking_end') {
-          // Resume mic after 200ms buffer
-          setTimeout(() => {
-            muteRef.current = false;
-            setVoiceState('listening');
-          }, 200);
+          setVoiceState('listening');
         } else if (msg.type === 'audio') {
-          // Decode base64 → int16 PCM → float32
           const raw = atob(msg.data);
           const bytes = new Uint8Array(raw.length);
           for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
@@ -338,7 +324,6 @@ function VoiceButton() {
   }, [playNext]);
 
   const stopVoice = useCallback(() => {
-    muteRef.current = false;
     if (processorRef.current) { processorRef.current.disconnect(); processorRef.current = null; }
     if (sourceRef.current) { sourceRef.current.disconnect(); sourceRef.current = null; }
     if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
@@ -358,25 +343,186 @@ function VoiceButton() {
     else stopVoice();
   }, [voiceState, startVoice, stopVoice]);
 
-  const btnColor = voiceState === 'idle' ? 'rgba(100,116,139,0.4)' : voiceState === 'listening' ? 'rgba(6,182,212,0.5)' : 'rgba(239,68,68,0.5)';
-  const glowColor = voiceState === 'idle' ? 'transparent' : voiceState === 'listening' ? 'rgba(6,182,212,0.6)' : 'rgba(239,68,68,0.6)';
-  const borderColor = voiceState === 'idle' ? 'rgba(148,163,184,0.3)' : voiceState === 'listening' ? 'rgba(34,211,238,0.6)' : 'rgba(248,113,113,0.6)';
+  const isActive = voiceState !== 'idle';
+  const isSpeaking = voiceState === 'speaking';
+  const ringColor = isSpeaking ? 'rgba(239,68,68,0.6)' : 'rgba(6,182,212,0.6)';
+  const btnBg = voiceState === 'idle' ? 'rgba(15,23,42,0.7)' : isSpeaking ? 'rgba(239,68,68,0.2)' : 'rgba(6,182,212,0.2)';
+  const borderCol = voiceState === 'idle' ? 'rgba(148,163,184,0.3)' : isSpeaking ? 'rgba(248,113,113,0.5)' : 'rgba(34,211,238,0.5)';
 
   return (
-    <button
-      onClick={toggle}
-      className="fixed bottom-6 right-6 z-[3000] w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-all duration-300 hover:scale-110 cursor-pointer"
-      style={{
-        background: btnColor,
-        border: `2px solid ${borderColor}`,
-        boxShadow: voiceState !== 'idle' ? `0 0 20px ${glowColor}, 0 0 40px ${glowColor}` : 'none',
-        backdropFilter: 'blur(12px)',
-        animation: voiceState !== 'idle' ? 'voice-pulse 2s ease-in-out infinite' : 'none',
-      }}
-      title={voiceState === 'idle' ? 'Start voice chat' : voiceState === 'listening' ? 'Listening... click to stop' : 'Model speaking...'}
-    >
-      {voiceState === 'idle' ? '🎙️' : voiceState === 'listening' ? '🎙️' : '🔊'}
-    </button>
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[3000] flex flex-col items-center gap-2">
+      {/* Status label */}
+      {isActive && (
+        <div className="px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2px] uppercase" style={{
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(12px)',
+          border: `1px solid ${borderCol}`,
+          color: isSpeaking ? '#f87171' : '#22d3ee',
+          animation: 'voice-label-pulse 2s ease-in-out infinite',
+        }}>
+          {isSpeaking ? '🔊 AI Speaking...' : '🎙️ Listening...'}
+        </div>
+      )}
+
+      {/* Mic button with ring */}
+      <div className="relative">
+        {/* Pulse ring */}
+        {isActive && (
+          <div className="absolute inset-0 rounded-full" style={{
+            border: `2px solid ${ringColor}`,
+            animation: 'voice-ring 2s ease-out infinite',
+          }} />
+        )}
+        <button
+          onClick={toggle}
+          className="relative w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-all duration-300 hover:scale-110 cursor-pointer"
+          style={{
+            background: btnBg,
+            border: `2px solid ${borderCol}`,
+            boxShadow: isActive ? `0 0 20px ${ringColor}, 0 0 40px ${ringColor}` : 'none',
+            backdropFilter: 'blur(12px)',
+          }}
+          title={voiceState === 'idle' ? 'Start voice chat' : 'Stop voice chat'}
+        >
+          {voiceState === 'idle' ? '🎙️' : isSpeaking ? '🔊' : '🎙️'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CHATBOX — Text chat with Gemini via /api/chat
+// ═══════════════════════════════════════════════════════════════════
+
+function ChatBox() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string }[]>([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [messages]);
+
+  const send = useCallback(async () => {
+    const text = input.trim();
+    if (!text || loading) return;
+    setInput('');
+    setMessages(prev => [...prev, { role: 'user', text }]);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      });
+      const data = await res.json();
+      setMessages(prev => [...prev, { role: 'ai', text: data.reply || 'No response.' }]);
+    } catch {
+      setMessages(prev => [...prev, { role: 'ai', text: '⚠️ Connection error.' }]);
+    }
+    setLoading(false);
+  }, [input, loading]);
+
+  if (!isOpen) {
+    return (
+      <button
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-6 right-6 z-[3000] w-14 h-14 rounded-full flex items-center justify-center text-2xl cursor-pointer hover:scale-110 transition-all"
+        style={{
+          background: 'rgba(15,23,42,0.7)',
+          border: '2px solid rgba(139,92,246,0.4)',
+          backdropFilter: 'blur(12px)',
+          boxShadow: '0 0 15px rgba(139,92,246,0.15)',
+        }}
+        title="Open chat"
+      >
+        💬
+      </button>
+    );
+  }
+
+  return (
+    <div className="fixed bottom-6 right-6 z-[3000] w-[340px] flex flex-col" style={{
+      height: '420px',
+      background: 'rgba(10,14,26,0.92)',
+      backdropFilter: 'blur(20px)',
+      border: '1px solid rgba(139,92,246,0.25)',
+      borderRadius: '16px',
+      boxShadow: '0 0 40px rgba(139,92,246,0.1)',
+    }}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🤖</span>
+          <span className="text-[13px] font-bold tracking-[1px] text-white/90" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>AURAOPS CHAT</span>
+        </div>
+        <button onClick={() => setIsOpen(false)} className="text-white/40 hover:text-white/80 text-lg cursor-pointer">✕</button>
+      </div>
+
+      {/* Messages */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-2.5" style={{ scrollBehavior: 'smooth' }}>
+        {messages.length === 0 && (
+          <div className="text-white/30 text-[12px] text-center mt-8" style={{ fontFamily: "'Inter', sans-serif" }}>
+            Ask AuraOps anything about your pipeline, vulnerabilities, or deployment status.
+          </div>
+        )}
+        {messages.map((m, i) => (
+          <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className="max-w-[85%] px-3 py-2 rounded-xl text-[12px] leading-relaxed" style={{
+              background: m.role === 'user' ? 'rgba(6,182,212,0.15)' : 'rgba(139,92,246,0.12)',
+              border: `1px solid ${m.role === 'user' ? 'rgba(6,182,212,0.2)' : 'rgba(139,92,246,0.15)'}`,
+              color: m.role === 'user' ? '#e0f2fe' : '#e9d5ff',
+              fontFamily: "'Inter', sans-serif",
+            }}>
+              {m.text}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="px-3 py-2 rounded-xl text-[12px]" style={{
+              background: 'rgba(139,92,246,0.12)',
+              border: '1px solid rgba(139,92,246,0.15)',
+              color: '#c4b5fd',
+              animation: 'pulse 1.5s infinite',
+            }}>
+              Thinking...
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Input */}
+      <div className="px-3 py-3 flex gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && send()}
+          placeholder="Type a message..."
+          className="flex-1 px-3 py-2 rounded-lg text-[12px] text-white/90 outline-none"
+          style={{
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            fontFamily: "'Inter', sans-serif",
+          }}
+        />
+        <button
+          onClick={send}
+          disabled={loading || !input.trim()}
+          className="px-3 py-2 rounded-lg text-[12px] font-bold cursor-pointer disabled:opacity-30 disabled:cursor-default transition-all hover:scale-105"
+          style={{
+            background: 'rgba(139,92,246,0.3)',
+            border: '1px solid rgba(139,92,246,0.4)',
+            color: '#c4b5fd',
+          }}
+        >
+          Send
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -606,9 +752,12 @@ export default function App() {
         @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
         @keyframes border-glow { 0%, 100% { box-shadow: 0 0 10px rgba(6, 182, 212, 0.05); border-color: rgba(255, 255, 255, 0.05); } 50% { box-shadow: 0 0 25px rgba(6, 182, 212, 0.25); border-color: rgba(34, 211, 238, 0.2); } }
         @keyframes voice-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+        @keyframes voice-ring { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.8); opacity: 0; } }
+        @keyframes voice-label-pulse { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
       `}</style>
 
       <VoiceButton />
+      <ChatBox />
     </div>
   );
 }
