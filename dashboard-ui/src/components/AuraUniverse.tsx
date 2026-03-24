@@ -134,16 +134,17 @@ export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scor
 
   // Full reset + start — works from ANY state (IDLE, COMPLETE, DRAWING_PIPES, etc.)
   const startFlow = useCallback(() => {
-    // Reset all internal animation state
+    // Reset pipe progress but light up ALL nodes immediately
     pipeProgressRef.current = 0;
-    setLitNodes(new Set(['trigger']));
+    // Show all nodes right away so the full pipeline structure is visible
+    setLitNodes(new Set(nodes.map(n => n.id)));
     setExpandedBubbles([]);
     groupPos.current.set(15, 0, 0);
     if (groupRef.current) groupRef.current.position.set(15, 0, 0);
     // Start the animation
     setFlowState('SHIFTING_LAYOUT');
     if (onPipelineTrigger) onPipelineTrigger();
-  }, [onPipelineTrigger]);
+  }, [onPipelineTrigger, nodes]);
 
   // External reset trigger (from Rescan button)
   useEffect(() => {
