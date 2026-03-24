@@ -120,7 +120,7 @@ export default function PipelineNode({
       )}
 
       {isVisible && !isScorecard && (
-        <Html position={[0, -(r + 0.8), 0]} center distanceFactor={15} style={{ pointerEvents: 'none' }}>
+        <Html position={[0, -(r + 0.8), 0]} center distanceFactor={15} zIndexRange={[0, 0]} style={{ pointerEvents: 'none' }}>
           <div style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(12px)', border: `1px solid ${color}40`, borderRadius: '8px', padding: '0.5vw 1vw', textAlign: 'center', fontFamily: "'Inter',sans-serif", whiteSpace: 'nowrap', boxShadow: `0 0 15px ${color}30` }}>
             <div style={{ color: '#fff', fontSize: 'clamp(14px, 1.2vw, 24px)', fontWeight: 700, textShadow: `0 0 8px ${color}80` }}>{label}</div>
             <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(11px, 0.9vw, 18px)' }}>{sublabel}</div>
@@ -129,7 +129,7 @@ export default function PipelineNode({
       )}
 
       {isTrigger && showClickHint && (
-        <Html position={[0, -2.5, 0]} center distanceFactor={15}>
+        <Html position={[0, -2.5, 0]} center distanceFactor={15} zIndexRange={[0, 0]}>
           <div style={{ color: '#22d3ee', fontSize: 'clamp(12px, 1vw, 20px)', letterSpacing: '2px', fontWeight: 600, fontFamily: "'Inter',sans-serif", animation: 'pulse-glow 2s infinite', whiteSpace: 'nowrap', textShadow: '0 0 10px #22d3ee, 0 0 20px #06b6d4' }}>CLICK TO RECORD EVENT</div>
           <style>{`@keyframes pulse-glow { 0%, 100% { opacity: 0.4; text-shadow: 0 0 5px #22d3ee; } 50% { opacity: 1; text-shadow: 0 0 15px #22d3ee, 0 0 30px #06b6d4; } }`}</style>
         </Html>
@@ -147,7 +147,7 @@ export default function PipelineNode({
               </mesh>
             </Float>
             {isExp && (
-              <Html position={[off[0], off[1] + 1.2, off[2]]} center distanceFactor={15} style={{ pointerEvents: 'none' }}>
+              <Html position={[off[0], off[1] + 1.2, off[2]]} center distanceFactor={15} zIndexRange={[0, 0]} style={{ pointerEvents: 'none' }}>
                 <div style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(24px)', border: `1px solid ${color}60`, borderRadius: '12px', boxShadow: `0 0 35px ${color}40`, padding: '0.8vw 1.2vw', fontFamily: "'Space Grotesk','Inter',sans-serif", minWidth: 'clamp(180px, 15vw, 250px)' }}>
                   <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 'clamp(10px, 0.8vw, 16px)', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '4px' }}>{b.label}</div>
                   <div style={{ color, fontSize: 'clamp(16px, 1.4vw, 26px)', fontWeight: 700, marginBottom: b.details ? '10px' : '0', textShadow: `0 0 15px ${color}` }}>{b.value}</div>
@@ -170,7 +170,7 @@ export default function PipelineNode({
       })}
 
       {isScorecard && isVisible && (
-        <Html position={[r + 1, 0, 0]} distanceFactor={15} style={{ pointerEvents: 'none', transform: 'translate3d(0, -50%, 0)' }}>
+        <Html position={[r + 1, 0, 0]} distanceFactor={15} zIndexRange={[0, 0]} style={{ pointerEvents: 'none', transform: 'translate3d(0, -50%, 0)' }}>
           <div style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(30px)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: '16px', boxShadow: '0 0 50px rgba(251,191,36,0.1)', padding: '1.8vw 2vw', fontFamily: "'Inter',sans-serif", width: 'clamp(340px, 32vw, 470px)', whiteSpace: 'nowrap' }}>
             <div style={{ color: '#FBBf24', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 800, letterSpacing: '2.5px', borderBottom: '1px solid rgba(251,191,36,0.2)', paddingBottom: '10px', marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
               <span>🏆 AURAOPS SCORECARD</span>
