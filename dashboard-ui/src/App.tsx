@@ -546,9 +546,9 @@ export default function App() {
   const [showTriggerModal, setShowTriggerModal] = useState(false);
   const [showDiffs, setShowDiffs] = useState(false);
   const [rescanning, setRescanning] = useState(false);
-  const [mriid, setMriid] = useState('2');
+  const [mriid, setMriid] = useState('3');
   const [projectId, setProjectId] = useState('80516674');
-  const [sourceBranch, setSourceBranch] = useState('test/final-vuln-scan');
+  const [sourceBranch, setSourceBranch] = useState('vuln-scan-demo');
   const [scorecardData, setScorecardData] = useState<any>(null);
   const [completedAgents, setCompletedAgents] = useState<Set<string>>(new Set());
   const [resetTrigger, setResetTrigger] = useState(0);
