@@ -546,6 +546,7 @@ export default function App() {
   const [showTriggerModal, setShowTriggerModal] = useState(false);
   const [showDiffs, setShowDiffs] = useState(false);
   const [rescanning, setRescanning] = useState(false);
+  const [pipelineActive, setPipelineActive] = useState(false);
   const [mriid, setMriid] = useState('3');
   const [projectId, setProjectId] = useState('80516674');
   const [sourceBranch, setSourceBranch] = useState('vuln-scan-demo');
@@ -565,11 +566,13 @@ export default function App() {
           if (payload.type === 'pipeline_start') {
             setTourIndex(1); // Jump to Security
             setCompletedAgents(new Set()); // Reset on new pipeline
+            setPipelineActive(true);
           } else if (payload.type === 'phase_start' && payload.agents && payload.agents.length > 0) {
             const agent = payload.agents[0];
             const idx = nextNodes.findIndex(n => n.id === agent);
             if (idx !== -1) setTourIndex(idx);
           } else if (payload.type === 'pipeline_complete') {
+             setPipelineActive(false);
              setScorecardData({
                ...(payload.data || {}),
                decision: payload.decision,
@@ -758,8 +761,16 @@ export default function App() {
                 {nodes[tourIndex].label}
                 <span className="text-[9px] md:text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 whitespace-nowrap shadow-[0_0_10px_rgba(16,185,129,0.2)]">LIVE</span>
               </h2>
-              <div className="text-slate-400 text-[10px] md:text-xs font-medium tracking-[1px] font-mono mt-0.5 uppercase truncate">
-                {nodes[tourIndex].sublabel}
+              <div className="flex items-center gap-2 mt-0.5">
+                <div className="text-slate-400 text-[10px] md:text-xs font-medium tracking-[1px] font-mono uppercase truncate">
+                  {nodes[tourIndex].sublabel}
+                </div>
+                {pipelineActive && (
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20" style={{ animation: 'pulse 2s ease-in-out infinite' }}>
+                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.8)]" />
+                    <span className="text-[9px] text-cyan-300 font-bold tracking-[1px] uppercase">Agents Processing</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

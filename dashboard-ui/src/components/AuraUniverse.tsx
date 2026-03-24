@@ -27,20 +27,20 @@ export interface NodeDef {
 
 export const INITIAL_NODES: NodeDef[] = [
   {
-    id: 'trigger', label: 'GitLab MR Opened', sublabel: 'Listening', pos: [-15, 0, 0], color: '#ffffff', revealAt: -1, isTrigger: true, branches: [],
+    id: 'trigger', label: 'GitLab MR Opened', sublabel: 'Webhook Receiver', pos: [-15, 0, 0], color: '#ffffff', revealAt: -1, isTrigger: true, branches: [],
     icon: '📡',
     processDesc: 'Listening for incoming webhooks from GitLab REST API. Intercepting Merge Request opened events and extracting commit differences.',
-    logs: ['> Ready and listening for /webhook', '> Waiting for MR event...', '> Idle']
+    logs: ['> Webhook receiver online', '> Monitoring GitLab REST API for MR events', '> System standby — click the cube to begin']
   },
   {
-    id: 'security', label: 'SecurityAgent', sublabel: 'Claude 4.6 Sonnet', pos: [-7, 6, -2], color: '#F97066', revealAt: 15, branches: [
+    id: 'security', label: 'SecurityAgent', sublabel: 'Gemini 2.5 Flash', pos: [-7, 6, -2], color: '#F97066', revealAt: 15, branches: [
       { id: 'sec-v', label: 'Vulnerabilities', value: 'Pending', details: ['Awaiting scan'], dormant: [0.5, 0.4, 0], expanded: [-1.2, 4.0, 1] },
       { id: 'sec-s', label: 'Security Score', value: 'Pending', details: ['Awaiting scoring'], dormant: [-0.5, 0.3, 0.2], expanded: [-4.2, 1.5, 0] },
       { id: 'sec-m', label: 'Analysis', value: 'Pending', details: ['Awaiting AST scan'], dormant: [0.4, -0.5, -0.5], expanded: [4.5, 3.0, 1.2] },
     ],
     icon: '🔐',
-    processDesc: 'Claude 4.6 Sonnet is conducting SAST/DAST analysis on the modified lines. Searching for credential leaks and hardcoded vulnerabilities.',
-    logs: ['> Target: codebase', '> generating AST syntax tree...', '> Waiting for agent...']
+    processDesc: 'Gemini 2.5 Flash is conducting deep SAST/DAST analysis on the modified lines. Searching for credential leaks and hardcoded vulnerabilities.',
+    logs: ['> Initializing static analysis engine', '> Parsing abstract syntax tree from MR diff', '> Scanning for credential leaks and injection vectors...']
   },
   {
     id: 'greenops', label: 'GreenOpsAgent', sublabel: 'Carbon API', pos: [-7, -6, 2], color: '#10B981', revealAt: 15, branches: [
@@ -49,8 +49,8 @@ export const INITIAL_NODES: NodeDef[] = [
       { id: 'grn-e', label: 'Eco Score', value: 'Pending', details: ['Awaiting computation'], dormant: [0.4, 0.5, 0.5], expanded: [4.5, -3.0, 1.2] },
     ],
     icon: '🌱',
-    processDesc: 'Analyzing CI/CD infrastructure allocation against real-time API telemetry to optimize power grid usage and eliminate wasted compute.',
-    logs: ['> Profiling pipeline job resource usage', '> Gathering carbon intensity telemetry', '> Waiting for agent...']
+    processDesc: 'Analyzing CI/CD infrastructure allocation against real-time carbon intensity telemetry to optimize power grid usage and eliminate wasted compute.',
+    logs: ['> Profiling pipeline job resource allocation', '> Querying real-time carbon intensity API', '> Optimizing deployment region for lowest emissions...']
   },
   {
     id: 'validation', label: 'ValidationAgent', sublabel: 'GitLab CI', pos: [1, 0, 0], color: '#38BDF8', revealAt: 35, branches: [
@@ -59,7 +59,7 @@ export const INITIAL_NODES: NodeDef[] = [
     ],
     icon: '🧪',
     processDesc: 'Running end-to-end integration and unit tests against the generated security fixes in an ephemeral parallel runner.',
-    logs: ['> Provisioning runner: docker+machine', '> Waiting for agent...']
+    logs: ['> Provisioning CI runner: docker+machine', '> Triggering GitLab CI pipeline on patched branch', '> Validating auto-remediation integrity...']
   },
   {
     id: 'risk', label: 'RiskEngine', sublabel: 'Release Authority', pos: [9, 4, -1], color: '#F59E0B', revealAt: 55, branches: [
@@ -68,7 +68,7 @@ export const INITIAL_NODES: NodeDef[] = [
     ],
     icon: '⚖️',
     processDesc: 'Consolidating AI reports from Security, GreenOps, and Validation to calculate a unified risk tolerance matrix before merge.',
-    logs: ['> Gathering Phase 1 signals', '> Waiting for agent...']
+    logs: ['> Synthesizing Phase 1 agent outputs', '> Computing neural confidence score', '> Evaluating release decision matrix...']
   },
   {
     id: 'compliance', label: 'ComplianceAgent', sublabel: 'SOC2 / GDPR', pos: [17, -4, 1], color: '#8B5CF6', revealAt: 70, branches: [
@@ -77,7 +77,7 @@ export const INITIAL_NODES: NodeDef[] = [
     ],
     icon: '📋',
     processDesc: 'Verifying regulatory compliance standard adherence across the deployment perimeter (SOC2, HIPAA, GDPR rulesets).',
-    logs: ['> Scanning schemas', '> Waiting for agent...']
+    logs: ['> Loading SOC2 / GDPR / HIPAA rulesets', '> Validating deployment perimeter schemas', '> Cross-referencing audit requirements...']
   },
   {
     id: 'deploy', label: 'DeployAgent', sublabel: 'Cloud Run', pos: [25, 2, 0], color: '#06B6D4', revealAt: 85, branches: [
@@ -86,13 +86,13 @@ export const INITIAL_NODES: NodeDef[] = [
     ],
     icon: '🚀',
     processDesc: 'Executing final infrastructure-as-code deployment to Google Cloud Run utilizing the optimized, risk-approved container artifacts.',
-    logs: ['> Preparing artifacts', '> Waiting for agent...']
+    logs: ['> Building optimized container image', '> Pushing to Google Cloud Run', '> Configuring traffic routing...']
   },
   {
     id: 'scorecard', label: 'AuraOps Scorecard', sublabel: 'Release Complete', pos: [33, -2, 0], color: '#FBBf24', revealAt: 98, isScorecard: true, branches: [],
     icon: '🏆',
     processDesc: 'Release pipeline concluded. An aggregated overview of the fully autonomous remediation and deployment cycle.',
-    logs: ['> Pipeline complete', '> Awaiting next trigger event...']
+    logs: ['> Pipeline execution complete', '> All agents have reported — scorecard generated', '> Ready for next trigger event']
   },
 ];
 
@@ -193,12 +193,18 @@ export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scor
         }
       }
 
-      // Smoothly approach the target progress
+      // Heartbeat: slowly creep forward even when no new agent results arrive
+      // This creates the illusion of continuous activity during long AI scans
+      const heartbeatCeiling = targetProgress + 12; // Allow creeping up to 12 units ahead
+      const maxCeiling = Math.min(heartbeatCeiling, 98); // Never reach 100 without scorecard
+      if (pipeProgressRef.current < maxCeiling) {
+        pipeProgressRef.current += dt * 0.8; // Slow steady creep
+      }
+
+      // Smoothly jump to target if behind
       const diff = targetProgress - pipeProgressRef.current;
       if (diff > 0.1) {
         pipeProgressRef.current += Math.min(diff, dt * 15); // Smooth approach
-      } else {
-        pipeProgressRef.current = targetProgress;
       }
 
       if (pipeProgressRef.current >= 100) {
