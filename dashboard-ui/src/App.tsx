@@ -702,9 +702,9 @@ export default function App() {
             setTimeout(() => setRescanning(false), 3000);
           }}
           disabled={rescanning}
-          className="pointer-events-auto px-5 py-2 bg-cyan-500/30 hover:bg-cyan-500/50 border border-cyan-400/60 rounded-full text-cyan-100 text-[11px] uppercase font-bold tracking-[2px] transition-all disabled:opacity-50 hover:scale-105 shadow-[0_0_20px_rgba(6,182,212,0.25)]"
+          className="pointer-events-auto px-5 py-2 bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-500/50 rounded-full text-cyan-200 text-[11px] uppercase font-bold tracking-[2px] transition-all disabled:opacity-50 hover:scale-105 shadow-[0_0_15px_rgba(6,182,212,0.15)]"
         >
-          {rescanning ? '⏳ Running...' : '▶ Run Pipeline'}
+          {rescanning ? '⏳ Rescanning...' : '↻ Rescan'}
         </button>
         <button 
           onClick={() => setShowDiffs(true)}
