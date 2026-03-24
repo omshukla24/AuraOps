@@ -295,7 +295,7 @@ export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scor
         ))}
 
         {/* Pipeline Nodes */}
-        {nodes.map(n => (
+        {nodes.map((n, i) => (
           <PipelineNode
             key={n.id}
             id={n.id}
@@ -311,6 +311,7 @@ export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scor
             expandedBubbles={expandedBubbles}
             onToggleBubble={toggleBubble}
             onTriggerClick={startFlow}
+            onNodeClick={() => { if (onTourIndexChange) onTourIndexChange(i); }}
             showClickHint={flowState === 'IDLE'}
             scorecardData={n.isScorecard ? scorecardData : undefined}
           />

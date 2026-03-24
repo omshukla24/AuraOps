@@ -24,6 +24,7 @@ interface Props {
   expandedBubbles: string[];
   onToggleBubble: (id: string) => void;
   onTriggerClick?: () => void;
+  onNodeClick?: () => void;
   showClickHint?: boolean;
   isScorecard?: boolean;
   isProcessing?: boolean;
@@ -32,7 +33,7 @@ interface Props {
 
 export default function PipelineNode({
   label, sublabel, position, color, isTrigger, isVisible,
-  branches, expandedBubbles, onToggleBubble, onTriggerClick, showClickHint, isScorecard, isProcessing,
+  branches, expandedBubbles, onToggleBubble, onTriggerClick, onNodeClick, showClickHint, isScorecard, isProcessing,
   scorecardData
 }: Props) {
   const meshRef = useRef<THREE.Group>(null);
@@ -74,7 +75,7 @@ export default function PipelineNode({
     }
   });
 
-  const click = (e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); if (isTrigger && onTriggerClick) onTriggerClick(); };
+  const click = (e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); if (isTrigger && onTriggerClick) onTriggerClick(); if (onNodeClick) onNodeClick(); };
 
   return (
     <group position={position}>
