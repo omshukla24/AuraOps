@@ -27,13 +27,17 @@ def get_mr_diff(project_id: int | str, mr_iid: int) -> str:
     """Fetch the full MR diff from GitLab."""
     pid_enc = urllib.parse.quote(str(project_id), safe="")
     url = f"{GITLAB_URL}/api/v4/projects/{pid_enc}/merge_requests/{mr_iid}/changes"
+    log(f"  [DEBUG] get_mr_diff URL: {url}")
+    log(f"  [DEBUG] HEADERS token present: {bool(HEADERS.get('PRIVATE-TOKEN'))}")
     try:
         resp = _get_with_fallback(url, timeout=30)
+        log(f"  [DEBUG] get_mr_diff status: {resp.status_code}")
         if resp.status_code != 200:
-            log(f"  get_mr_diff failed: {resp.status_code}")
+            log(f"  get_mr_diff failed: {resp.status_code} — {resp.text[:200]}")
             return ""
         data = resp.json()
         changes = data.get("changes", [])
+        log(f"  [DEBUG] get_mr_diff changes count: {len(changes)}")
         
         # GitLab race condition: diff changes might be empty immediately after MR open
         if not changes:
@@ -43,13 +47,16 @@ def get_mr_diff(project_id: int | str, mr_iid: int) -> str:
             resp = _get_with_fallback(url, timeout=30)
             data = resp.json() if resp.status_code == 200 else {}
             changes = data.get("changes", [])
+            log(f"  [DEBUG] get_mr_diff retry changes count: {len(changes)}")
 
         diff_parts = []
         for change in changes:
             diff_parts.append(f"--- a/{change.get('old_path', '')}")
             diff_parts.append(f"+++ b/{change.get('new_path', '')}")
             diff_parts.append(change.get("diff", ""))
-        return "\n".join(diff_parts)
+        result = "\n".join(diff_parts)
+        log(f"  [DEBUG] get_mr_diff result length: {len(result)} chars")
+        return result
     except Exception as e:
         log(f"  get_mr_diff error: {e}")
         return ""
@@ -61,11 +68,16 @@ def get_changed_files(project_id: int | str, mr_iid: int) -> list:
     url = f"{GITLAB_URL}/api/v4/projects/{pid_enc}/merge_requests/{mr_iid}/changes"
     try:
         resp = _get_with_fallback(url, timeout=30)
+        log(f"  [DEBUG] get_changed_files status: {resp.status_code}")
         if resp.status_code != 200:
+            log(f"  [DEBUG] get_changed_files body: {resp.text[:200]}")
             return []
         data = resp.json()
-        return [c.get("new_path", "") for c in data.get("changes", []) if c.get("new_path")]
-    except Exception:
+        files = [c.get("new_path", "") for c in data.get("changes", []) if c.get("new_path")]
+        log(f"  [DEBUG] get_changed_files: {files}")
+        return files
+    except Exception as e:
+        log(f"  [DEBUG] get_changed_files error: {e}")
         return []
 
 
