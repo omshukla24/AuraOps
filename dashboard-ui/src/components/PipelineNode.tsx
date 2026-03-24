@@ -177,22 +177,24 @@ export default function PipelineNode({
             </div>
 
             <div style={{ color: scorecardData?.decision === 'APPROVE' ? '#50ffb0' : scorecardData?.decision === 'BLOCK' ? '#F97066' : '#FBBf24', fontSize: 'clamp(18px, 1.5vw, 28px)', fontWeight: 800, marginBottom: '8px', textShadow: `0 0 20px ${scorecardData?.decision === 'APPROVE' ? 'rgba(80,255,176,0.4)' : scorecardData?.decision === 'BLOCK' ? 'rgba(249,112,102,0.4)' : 'rgba(251,191,36,0.4)'}` }}>
-              {scorecardData?.decision === 'APPROVE' ? '✅ RELEASE APPROVED' : scorecardData?.decision === 'BLOCK' ? '❌ RELEASE BLOCKED' : '⚠️ RELEASE FLAGGED'}
+              {scorecardData?.decision === 'APPROVE' ? '✅ RELEASE APPROVED' : scorecardData?.decision === 'BLOCK' ? '❌ RELEASE BLOCKED' : '⚠️ ACTION REQUIRED'}
             </div>
             <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 'clamp(12px, 1vw, 16px)', marginBottom: '16px', lineHeight: 1.5, whiteSpace: 'normal', fontFamily: "'Space Grotesk', sans-serif" }}>
               {scorecardData?.decision === 'APPROVE' 
                 ? 'Autonomous remediation complete. All high-severity metrics fall within acceptable regulatory and risk thresholds. Zero regressions introduced.' 
-                : 'CRITICAL FAILURE: AuraOps has intercepted the pipeline and permanently blocked this release. Safety thresholds were severely violated by the proposed codebase changes.'}
+                : scorecardData?.decision === 'BLOCK'
+                ? 'CRITICAL FAILURE: AuraOps has intercepted the pipeline and permanently blocked this release. Safety thresholds were severely violated.'
+                : `Security issues detected — ${scorecardData?.vuln_count || 0} vulnerabilities found. Review and remediation recommended before merge.`}
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '12px', marginBottom: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <div><div style={{ color: '#8899aa', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Time Saved</div><div style={{ color: '#fff', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700 }}>{scorecardData?.time_saved || 0} min</div></div>
-              <div><div style={{ color: '#8899aa', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Agent Cost</div><div style={{ color: '#fff', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700 }}>${scorecardData?.cost?.toFixed(3) || '0.000'}</div></div>
-              <div><div style={{ color: '#8899aa', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Code Patches</div><div style={{ color: '#F97066', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700 }}>{scorecardData?.patches || 0} Critical</div></div>
-              <div><div style={{ color: '#8899aa', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>CO₂ Avoided</div><div style={{ color: '#10B981', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700 }}>{scorecardData?.co2_saved?.toFixed(1) || '0.0'} kg/yr</div></div>
+              <div><div style={{ color: '#8899aa', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Time Saved</div><div style={{ color: '#fff', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700 }}>{scorecardData?.time_saved_min || 0} min</div></div>
+              <div><div style={{ color: '#8899aa', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Agent Cost</div><div style={{ color: '#fff', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700 }}>${typeof scorecardData?.agent_cost === 'number' ? scorecardData.agent_cost.toFixed(3) : '0.000'}</div></div>
+              <div><div style={{ color: '#8899aa', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Code Patches</div><div style={{ color: '#F97066', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700 }}>{scorecardData?.patches_committed || 0} Critical</div></div>
+              <div><div style={{ color: '#8899aa', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>CO₂ Avoided</div><div style={{ color: '#10B981', fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700 }}>{typeof scorecardData?.co2_saved === 'number' ? scorecardData.co2_saved.toFixed(1) : '0.0'} kg/yr</div></div>
             </div>
 
-            {[{ l: '🛡️ Security Tolerance', v: scorecardData?.sec_score ?? 0, c: '#F97066' }, { l: '🌱 Sustainability Index', v: scorecardData?.eco_score ?? 0, c: '#10B981' }].map(x => (
+            {[{ l: '🛡️ Security Tolerance', v: scorecardData?.security_score ?? 0, c: '#F97066' }, { l: '🌱 Sustainability Index', v: scorecardData?.eco_score ?? 0, c: '#10B981' }].map(x => (
               <div key={x.l} style={{ marginBottom: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span style={{ color: '#aab', fontSize: 'clamp(12px, 1vw, 16px)' }}>{x.l}</span><span style={{ color: x.c, fontSize: 'clamp(14px, 1.2vw, 20px)', fontWeight: 700, textShadow: `0 0 10px ${x.c}40` }}>{x.v}/100</span></div>
                 <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}><div style={{ width: `${x.v}%`, height: '100%', background: x.c, borderRadius: '3px', boxShadow: `0 0 15px ${x.c}` }} /></div>
@@ -201,7 +203,7 @@ export default function PipelineNode({
 
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px', marginTop: '12px', fontSize: 'clamp(11px, 0.9vw, 14px)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}><span style={{ color: '#8899aa' }}>🤖 Model Reasoning</span><span style={{ color: '#38BDF8', fontWeight: 700 }}>Claude 4.6 Sonnet</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}><span style={{ color: '#8899aa' }}>🧪 Integration Tests</span><span style={{ color: scorecardData?.tests_passed ? '#50ffb0' : '#F97066', fontWeight: 700 }}>{scorecardData?.tests_passed ? 'Passed ✅' : 'Failed ❌'}</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}><span style={{ color: '#8899aa' }}>🧪 Integration Tests</span><span style={{ color: scorecardData?.validation_passed ? '#50ffb0' : '#F97066', fontWeight: 700 }}>{scorecardData?.validation_passed ? 'Passed ✅' : 'Failed ❌'}</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}><span style={{ color: '#8899aa' }}>🚦 AI Decision</span><span style={{ color: scorecardData?.decision === 'APPROVE' ? '#50ffb0' : scorecardData?.decision === 'BLOCK' ? '#F97066' : '#FBBf24', fontWeight: 700 }}>{scorecardData?.decision || 'PENDING'}</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#8899aa' }}>⚖️ Confidence Score</span><span style={{ color: '#FBBf24', fontWeight: 700 }}>{scorecardData?.confidence || 0}%</span></div>
             </div>
