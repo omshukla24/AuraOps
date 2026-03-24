@@ -13,7 +13,7 @@ from backend.config import BEST_REGION, broadcast, reset_tokens, get_token_cost
 from backend.utils.logger import log
 from backend.utils.history import save_mr_result
 from backend.utils.gitlab_client import (
-    get_mr_diff, get_changed_files, post_comment,
+    get_mr_diff, get_changed_files, post_comment, get_file_content,
 )
 from backend.agents import (
     security_agent,
@@ -47,43 +47,76 @@ def extract_context(payload: dict) -> dict:
     }
 
 
-MOCK_VULN_DIFF = """--- a/backend/auth.py
-+++ b/backend/auth.py
-@@ -0,0 +1,18 @@
-+import sqlite3
-+import logging
-+
-+# Insecure Hardcoded credential
-+AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE" 
-+AWS_SECRET_ACCESS_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-+
-+def authenticate_user(username, password):
-+    conn = sqlite3.connect('app.db')
-+    cursor = conn.cursor()
-+    
-+    # Vulnerability: SQL Injection vector
-+    query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
-+    cursor.execute(query)
-+    
-+    user = cursor.fetchone()
-+    
-+    # Vulnerability: Logging Sensitive PII data plaintext
-+    logging.info(f"User login attempt: {user}")
-+    
-+    return user is not None
-"""
-
 async def ensure_diff(ctx: dict):
-    """Lazily load the MR diff and changed files if not already present."""
+    """Lazily load the MR diff and changed files.
+    Falls back to reading actual file contents from the source branch
+    if the diff API call fails (auth issues, race condition, etc.).
+    """
     if ctx["diff"] is None:
         ctx["diff"] = get_mr_diff(ctx["project_id"], ctx["mr_iid"])
-        if not ctx["diff"]:
-            log("⚠️ Failed to fetch live diff; injecting dynamic mock diff for demo reliability")
-            ctx["diff"] = MOCK_VULN_DIFF
+
     if ctx["changed_files"] is None:
         ctx["changed_files"] = get_changed_files(ctx["project_id"], ctx["mr_iid"])
-        if not ctx["changed_files"]:
-            ctx["changed_files"] = ["backend/auth.py", "Dockerfile"]
+
+    # If diff API failed but we have changed files, build diff from file contents
+    if not ctx["diff"] and ctx["changed_files"]:
+        log("⚠️ Diff API empty, building diff from individual file contents...")
+        diff_parts = []
+        for fpath in ctx["changed_files"][:10]:
+            content = get_file_content(ctx["project_id"], fpath, ctx["source_branch"])
+            if content:
+                lines = content.splitlines()
+                diff_parts.append(f"--- /dev/null")
+                diff_parts.append(f"+++ b/{fpath}")
+                diff_parts.append(f"@@ -0,0 +1,{len(lines)} @@")
+                for line in lines:
+                    diff_parts.append(f"+{line}")
+        ctx["diff"] = "\n".join(diff_parts)
+        if ctx["diff"]:
+            log(f"  ✅ Built diff from {len(ctx['changed_files'])} file(s)")
+
+    # If we still have no diff AND no changed files, try listing branch files
+    if not ctx["diff"]:
+        log("⚠️ No diff and no changed files; listing source branch files as last resort...")
+        import requests, urllib.parse
+        from backend.config import GITLAB_URL, HEADERS
+        pid_enc = urllib.parse.quote(str(ctx["project_id"]), safe="")
+        branch = ctx["source_branch"]
+        try:
+            url = f"{GITLAB_URL}/api/v4/projects/{pid_enc}/repository/tree?ref={branch}&recursive=true&per_page=50"
+            resp = requests.get(url, headers=HEADERS, timeout=30)
+            if resp.status_code in (401, 403):
+                resp = requests.get(url, timeout=30)
+            if resp.status_code == 200:
+                tree = resp.json()
+                code_files = [f["path"] for f in tree
+                              if f.get("type") == "blob"
+                              and any(f["path"].endswith(ext) for ext in
+                                      (".py", ".js", ".ts", ".java", ".go", ".rb",
+                                       ".yaml", ".yml", ".json", ".toml", ".cfg",
+                                       ".env", "Dockerfile", ".tf", ".sh"))]
+                if code_files:
+                    ctx["changed_files"] = code_files
+                    diff_parts = []
+                    for fpath in code_files[:10]:
+                        content = get_file_content(ctx["project_id"], fpath, branch)
+                        if content:
+                            lines = content.splitlines()
+                            diff_parts.append(f"--- /dev/null")
+                            diff_parts.append(f"+++ b/{fpath}")
+                            diff_parts.append(f"@@ -0,0 +1,{len(lines)} @@")
+                            for line in lines:
+                                diff_parts.append(f"+{line}")
+                    ctx["diff"] = "\n".join(diff_parts)
+                    if ctx["diff"]:
+                        log(f"  ✅ Built diff from {len(code_files)} branch file(s)")
+        except Exception as e:
+            log(f"  Branch listing fallback error: {e}")
+
+    if not ctx["diff"]:
+        log("⚠️ Could not obtain any code to scan — security results will be empty")
+    if not ctx["changed_files"]:
+        ctx["changed_files"] = []
 
 
 async def run_all_agents(payload: dict):
