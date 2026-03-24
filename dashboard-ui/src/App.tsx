@@ -551,6 +551,7 @@ export default function App() {
   const [sourceBranch, setSourceBranch] = useState('test/final-vuln-scan');
   const [scorecardData, setScorecardData] = useState<any>(null);
   const [completedAgents, setCompletedAgents] = useState<Set<string>>(new Set());
+  const [resetTrigger, setResetTrigger] = useState(0);
 
   useEffect(() => {
     const source = new EventSource('/api/events');
@@ -680,26 +681,13 @@ export default function App() {
           ⚙ Configure
         </button>
         <button 
-          onClick={async () => {
-            setRescanning(true);
-            // Reset animation state
+          onClick={() => {
+            // Just increment resetTrigger — AuraUniverse will handle the full reset + trigger
             setTourIndex(0);
             setNodes(INITIAL_NODES);
             setCompletedAgents(new Set());
             setScorecardData(null);
-            try {
-              await fetch('/api/trigger', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  project_id: projectId || '80516674',
-                  mr_iid: parseInt(mriid) || 2,
-                  source_branch: sourceBranch || 'main',
-                  target_branch: 'main'
-                })
-              });
-            } catch {}
-            setTimeout(() => setRescanning(false), 3000);
+            setResetTrigger(prev => prev + 1);
           }}
           disabled={rescanning}
           className="pointer-events-auto px-5 py-2 bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-500/50 rounded-full text-cyan-200 text-[11px] uppercase font-bold tracking-[2px] transition-all disabled:opacity-50 hover:scale-105 shadow-[0_0_15px_rgba(6,182,212,0.15)]"
@@ -734,6 +722,7 @@ export default function App() {
           onTourIndexChange={setTourIndex} 
           scorecardData={scorecardData} 
           completedAgents={completedAgents}
+          resetTrigger={resetTrigger}
           onPipelineTrigger={() => {
             // Reset animation state
             setTourIndex(0);

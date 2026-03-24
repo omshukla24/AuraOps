@@ -122,7 +122,7 @@ const PIPES: PipeDef[] = [
 //  MAIN SCENE
 // ═══════════════════════════════════════
 
-export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scorecardData, completedAgents, onPipelineTrigger }: { nodes: NodeDef[], tourIndex: number, onTourIndexChange?: (i: number) => void, scorecardData?: any, completedAgents?: Set<string>, onPipelineTrigger?: () => void }) {
+export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scorecardData, completedAgents, onPipelineTrigger, resetTrigger }: { nodes: NodeDef[], tourIndex: number, onTourIndexChange?: (i: number) => void, scorecardData?: any, completedAgents?: Set<string>, onPipelineTrigger?: () => void, resetTrigger?: number }) {
   const [flowState, setFlowState] = useState<FlowState>('IDLE');
   const pipeProgressRef = useRef(0); // 0 to 100
   const [litNodes, setLitNodes] = useState<Set<string>>(new Set(['trigger']));
@@ -132,13 +132,25 @@ export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scor
   const groupRef = useRef<THREE.Group>(null);
   const groupPos = useRef(new THREE.Vector3(15, 0, 0));
 
+  // Full reset + start — works from ANY state (IDLE, COMPLETE, DRAWING_PIPES, etc.)
   const startFlow = useCallback(() => {
-    if (flowState === 'IDLE') {
-      setFlowState('SHIFTING_LAYOUT');
-      pipeProgressRef.current = 0;
-      if (onPipelineTrigger) onPipelineTrigger();
+    // Reset all internal animation state
+    pipeProgressRef.current = 0;
+    setLitNodes(new Set(['trigger']));
+    setExpandedBubbles([]);
+    groupPos.current.set(15, 0, 0);
+    if (groupRef.current) groupRef.current.position.set(15, 0, 0);
+    // Start the animation
+    setFlowState('SHIFTING_LAYOUT');
+    if (onPipelineTrigger) onPipelineTrigger();
+  }, [onPipelineTrigger]);
+
+  // External reset trigger (from Rescan button)
+  useEffect(() => {
+    if (resetTrigger && resetTrigger > 0) {
+      startFlow();
     }
-  }, [flowState, onPipelineTrigger]);
+  }, [resetTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleBubble = useCallback((id: string) => {
     setExpandedBubbles(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
