@@ -116,32 +116,43 @@ async def handle_voice_ws(websocket: WebSocket):
             async def receive_audio_from_gemini():
                 try:
                     speaking = False
-                    async for response in session.receive():
-                        sc = response.server_content
-                        if sc is None:
-                            continue
+                    # Keep receiving across multiple turns — don't exit on turn_complete
+                    while True:
+                        async for response in session.receive():
+                            sc = response.server_content
+                            if sc is None:
+                                continue
 
-                        # Check if model is producing audio
-                        if sc.model_turn and sc.model_turn.parts:
-                            if not speaking:
-                                speaking = True
-                                await websocket.send_json({"type": "speaking_start"})
+                            # Check if model is producing audio
+                            if sc.model_turn and sc.model_turn.parts:
+                                if not speaking:
+                                    speaking = True
+                                    await websocket.send_json({"type": "speaking_start"})
 
-                            for part in sc.model_turn.parts:
-                                if part.inline_data and part.inline_data.data:
-                                    audio_b64 = base64.b64encode(
-                                        part.inline_data.data
-                                    ).decode("ascii")
-                                    await websocket.send_json({
-                                        "type": "audio",
-                                        "data": audio_b64,
-                                    })
+                                for part in sc.model_turn.parts:
+                                    if part.inline_data and part.inline_data.data:
+                                        audio_b64 = base64.b64encode(
+                                            part.inline_data.data
+                                        ).decode("ascii")
+                                        await websocket.send_json({
+                                            "type": "audio",
+                                            "data": audio_b64,
+                                        })
 
-                        # Turn complete — model done speaking
-                        if sc.turn_complete:
-                            if speaking:
-                                speaking = False
-                                await websocket.send_json({"type": "speaking_end"})
+                            # Model was interrupted by user speech (barge-in)
+                            if getattr(sc, "interrupted", False):
+                                if speaking:
+                                    speaking = False
+                                    # Tell frontend to flush playback queue
+                                    await websocket.send_json({"type": "clear_audio"})
+                                    await websocket.send_json({"type": "speaking_end"})
+
+                            # Turn complete — model done speaking this turn
+                            if sc.turn_complete:
+                                if speaking:
+                                    speaking = False
+                                    await websocket.send_json({"type": "speaking_end"})
+                                # DON'T break — keep listening for next turn
 
                 except WebSocketDisconnect:
                     pass
@@ -153,7 +164,7 @@ async def handle_voice_ws(websocket: WebSocket):
             send_task = asyncio.create_task(send_audio_to_gemini())
             recv_task = asyncio.create_task(receive_audio_from_gemini())
 
-            # Wait for either to finish (disconnect or error)
+            # Wait for either to finish (only on disconnect or error)
             done, pending = await asyncio.wait(
                 [send_task, recv_task],
                 return_when=asyncio.FIRST_COMPLETED,

@@ -300,6 +300,10 @@ function VoiceButton() {
           setVoiceState('speaking');
         } else if (msg.type === 'speaking_end') {
           setVoiceState('listening');
+        } else if (msg.type === 'clear_audio') {
+          // Barge-in: flush playback queue so stale audio stops
+          playQueueRef.current = [];
+          isPlayingRef.current = false;
         } else if (msg.type === 'audio') {
           const raw = atob(msg.data);
           const bytes = new Uint8Array(raw.length);
@@ -313,6 +317,7 @@ function VoiceButton() {
           console.error('[Voice] Error:', msg.message);
           stopVoice();
         }
+        // 'connected' type — session ready, no action needed
       };
 
       ws.onclose = () => stopVoice();
