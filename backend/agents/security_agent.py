@@ -125,14 +125,22 @@ async def run(ctx: dict) -> dict:
 
         # Merge results
         all_issues = []
+        log(f"  [DEBUG] vuln_results type: {type(vuln_results).__name__}, secrets_results type: {type(secrets_results).__name__}")
+        if isinstance(vuln_results, Exception):
+            log(f"  [DEBUG] vuln_results EXCEPTION: {vuln_results}")
+        if isinstance(secrets_results, Exception):
+            log(f"  [DEBUG] secrets_results EXCEPTION: {secrets_results}")
         if isinstance(vuln_results, list):
+            log(f"  [DEBUG] vuln_results count: {len(vuln_results)}")
             all_issues.extend(vuln_results)
         if isinstance(secrets_results, list):
+            log(f"  [DEBUG] secrets_results count: {len(secrets_results)}")
             all_issues.extend(secrets_results)
 
         # Dependency CVE scanning
         dep_issues = await _scan_dependencies(ctx)
         all_issues.extend(dep_issues)
+        log(f"  [DEBUG] total all_issues: {len(all_issues)}")
 
         if not all_issues:
             log("🔐 SecurityAgent: No vulnerabilities found ✅")
@@ -299,9 +307,8 @@ async def run(ctx: dict) -> dict:
 def _claude_scan(prompt: str, diff: str) -> list:
     """Call Claude to scan diff for security issues."""
     try:
-        # response = claude.messages.create(...)
-
         # Actual heavy lifting routed to Gemini 2.5 Flash
+        log(f"  [DEBUG] _claude_scan: sending {len(diff)} chars to Gemini")
         gemini_response = gemini_model.generate_content(f"{prompt}\n\nDiff:\n{diff}")
 
         class DummyUsage:
@@ -314,12 +321,15 @@ def _claude_scan(prompt: str, diff: str) -> list:
         track_tokens(DummyResponse())
         
         text = gemini_response.text.strip()
+        log(f"  [DEBUG] _claude_scan response length: {len(text)} chars")
+        log(f"  [DEBUG] _claude_scan response preview: {text[:300]}")
         text = re.sub(r"^```(?:json)?\s*", "", text)
         text = re.sub(r"\s*```$", "", text)
         parsed = json.loads(text)
+        log(f"  [DEBUG] _claude_scan parsed {len(parsed) if isinstance(parsed, list) else 'non-list'} items")
         return parsed if isinstance(parsed, list) else []
     except (json.JSONDecodeError, Exception) as e:
-        log(f"  Claude scan parse error: {e}")
+        log(f"  [DEBUG] _claude_scan ERROR: {type(e).__name__}: {e}")
         return []
 
 
