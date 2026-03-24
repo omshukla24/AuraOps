@@ -18,9 +18,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy modular backend package
 COPY backend/ backend/
 
-# Copy demo vulnerable app (used for trigger-test)
-COPY demo_vulnerable_app.py .
-
 # Copy React build output from frontend stage
 COPY --from=frontend /frontend/dist dashboard-ui/dist/
 
