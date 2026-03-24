@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import AuraUniverse, { INITIAL_NODES, type NodeDef } from './components/AuraUniverse';
 import './index.css';
@@ -219,6 +219,164 @@ function TriggerModal({ onClose, mriid, setMriid, projectId, setProjectId }: any
         </div>
       </div>
     </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// VOICE BUTTON — Gemini native audio via WebSocket
+// ═══════════════════════════════════════════════════════════════════
+
+function VoiceButton() {
+  const [voiceState, setVoiceState] = useState<'idle' | 'listening' | 'speaking'>('idle');
+  const wsRef = useRef<WebSocket | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const muteRef = useRef(false); // true when model is speaking
+  const playQueueRef = useRef<Float32Array[]>([]);
+  const isPlayingRef = useRef(false);
+
+  // Play queued audio chunks at 24kHz
+  const playNext = useCallback(() => {
+    if (!audioCtxRef.current || playQueueRef.current.length === 0) {
+      isPlayingRef.current = false;
+      return;
+    }
+    isPlayingRef.current = true;
+    const chunk = playQueueRef.current.shift()!;
+    const buffer = audioCtxRef.current.createBuffer(1, chunk.length, 24000);
+    buffer.getChannelData(0).set(chunk);
+    const src = audioCtxRef.current.createBufferSource();
+    src.buffer = buffer;
+    src.connect(audioCtxRef.current.destination);
+    src.onended = () => playNext();
+    src.start();
+  }, []);
+
+  const startVoice = useCallback(async () => {
+    try {
+      // Audio context for playback
+      const actx = new AudioContext({ sampleRate: 24000 });
+      audioCtxRef.current = actx;
+
+      // Get mic stream at 16kHz
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true },
+      });
+      streamRef.current = stream;
+
+      // Create capture context at 16kHz
+      const capCtx = new AudioContext({ sampleRate: 16000 });
+      const source = capCtx.createMediaStreamSource(stream);
+      sourceRef.current = source;
+      const processor = capCtx.createScriptProcessor(4096, 1, 1);
+      processorRef.current = processor;
+
+      // WebSocket
+      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(`${proto}//${window.location.host}/ws/voice`);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        setVoiceState('listening');
+        // Start capturing
+        source.connect(processor);
+        processor.connect(capCtx.destination);
+      };
+
+      processor.onaudioprocess = (e) => {
+        if (muteRef.current || ws.readyState !== WebSocket.OPEN) return;
+        const float32 = e.inputBuffer.getChannelData(0);
+        // Convert float32 → int16 PCM
+        const int16 = new Int16Array(float32.length);
+        for (let i = 0; i < float32.length; i++) {
+          const s = Math.max(-1, Math.min(1, float32[i]));
+          int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+        // Base64 encode
+        const bytes = new Uint8Array(int16.buffer);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        const b64 = btoa(binary);
+        ws.send(JSON.stringify({ type: 'audio', data: b64 }));
+      };
+
+      ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'speaking_start') {
+          muteRef.current = true;
+          setVoiceState('speaking');
+        } else if (msg.type === 'speaking_end') {
+          // Resume mic after 200ms buffer
+          setTimeout(() => {
+            muteRef.current = false;
+            setVoiceState('listening');
+          }, 200);
+        } else if (msg.type === 'audio') {
+          // Decode base64 → int16 PCM → float32
+          const raw = atob(msg.data);
+          const bytes = new Uint8Array(raw.length);
+          for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+          const int16 = new Int16Array(bytes.buffer);
+          const float32 = new Float32Array(int16.length);
+          for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 0x8000;
+          playQueueRef.current.push(float32);
+          if (!isPlayingRef.current) playNext();
+        } else if (msg.type === 'error') {
+          console.error('[Voice] Error:', msg.message);
+          stopVoice();
+        }
+      };
+
+      ws.onclose = () => stopVoice();
+      ws.onerror = () => stopVoice();
+    } catch (err) {
+      console.error('[Voice] Failed to start:', err);
+      setVoiceState('idle');
+    }
+  }, [playNext]);
+
+  const stopVoice = useCallback(() => {
+    muteRef.current = false;
+    if (processorRef.current) { processorRef.current.disconnect(); processorRef.current = null; }
+    if (sourceRef.current) { sourceRef.current.disconnect(); sourceRef.current = null; }
+    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'close' }));
+      wsRef.current.close();
+    }
+    wsRef.current = null;
+    if (audioCtxRef.current) { audioCtxRef.current.close(); audioCtxRef.current = null; }
+    playQueueRef.current = [];
+    isPlayingRef.current = false;
+    setVoiceState('idle');
+  }, []);
+
+  const toggle = useCallback(() => {
+    if (voiceState === 'idle') startVoice();
+    else stopVoice();
+  }, [voiceState, startVoice, stopVoice]);
+
+  const btnColor = voiceState === 'idle' ? 'rgba(100,116,139,0.4)' : voiceState === 'listening' ? 'rgba(6,182,212,0.5)' : 'rgba(239,68,68,0.5)';
+  const glowColor = voiceState === 'idle' ? 'transparent' : voiceState === 'listening' ? 'rgba(6,182,212,0.6)' : 'rgba(239,68,68,0.6)';
+  const borderColor = voiceState === 'idle' ? 'rgba(148,163,184,0.3)' : voiceState === 'listening' ? 'rgba(34,211,238,0.6)' : 'rgba(248,113,113,0.6)';
+
+  return (
+    <button
+      onClick={toggle}
+      className="fixed bottom-6 right-6 z-[3000] w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-all duration-300 hover:scale-110 cursor-pointer"
+      style={{
+        background: btnColor,
+        border: `2px solid ${borderColor}`,
+        boxShadow: voiceState !== 'idle' ? `0 0 20px ${glowColor}, 0 0 40px ${glowColor}` : 'none',
+        backdropFilter: 'blur(12px)',
+        animation: voiceState !== 'idle' ? 'voice-pulse 2s ease-in-out infinite' : 'none',
+      }}
+      title={voiceState === 'idle' ? 'Start voice chat' : voiceState === 'listening' ? 'Listening... click to stop' : 'Model speaking...'}
+    >
+      {voiceState === 'idle' ? '🎙️' : voiceState === 'listening' ? '🎙️' : '🔊'}
+    </button>
   );
 }
 
@@ -447,7 +605,10 @@ export default function App() {
         @keyframes pulse { 0%,100% { opacity: 0.35; } 50% { opacity: 0.8; } }
         @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
         @keyframes border-glow { 0%, 100% { box-shadow: 0 0 10px rgba(6, 182, 212, 0.05); border-color: rgba(255, 255, 255, 0.05); } 50% { box-shadow: 0 0 25px rgba(6, 182, 212, 0.25); border-color: rgba(34, 211, 238, 0.2); } }
+        @keyframes voice-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
       `}</style>
+
+      <VoiceButton />
     </div>
   );
 }

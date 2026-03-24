@@ -10,7 +10,7 @@ import json
 import asyncio
 import queue as queue_mod
 
-from fastapi import FastAPI, Request, BackgroundTasks
+from fastapi import FastAPI, Request, BackgroundTasks, WebSocket
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 
 from backend.config import PORT, get_event_queue, broadcast
@@ -233,6 +233,16 @@ async def api_diffs():
                 "description": v.get("description", ""),
             })
     return diffs
+
+
+# ─────────────────────────────────────────────────────────────────────
+# VOICE WEBSOCKET
+# ─────────────────────────────────────────────────────────────────────
+
+@app.websocket("/ws/voice")
+async def voice_ws_endpoint(websocket: WebSocket):
+    from backend.voice_ws import handle_voice_ws
+    await handle_voice_ws(websocket)
 
 
 # ─────────────────────────────────────────────────────────────────────
