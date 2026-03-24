@@ -25,6 +25,10 @@ from backend.agents import (
 )
 from backend.scorecard import format_scorecard
 
+# Store last run context/payload for rescan and diffs
+_last_ctx: dict = {}
+_last_payload: dict = {}
+
 
 def extract_context(payload: dict) -> dict:
     """Extract MR context from GitLab webhook payload."""
@@ -90,11 +94,13 @@ async def run_all_agents(payload: dict):
     Phase 3: ComplianceAgent + DeployAgent (parallel)
     Then: format scorecard, post to MR, save history.
     """
+    global _last_ctx, _last_payload
     start_time = time.time()
     reset_tokens()
     ctx = extract_context(payload)
     ctx["agent_timings"] = {}
     ctx["agent_errors"] = []
+    _last_payload = payload
     log(f"📋 Processing MR !{ctx['mr_iid']}: {ctx['mr_title']}")
     broadcast({"type": "pipeline_start", "mr_iid": ctx['mr_iid'], "mr_title": ctx['mr_title']})
 
@@ -180,6 +186,7 @@ async def run_all_agents(payload: dict):
 
         decision = ctx['risk_result'].get('decision', 'UNKNOWN')
         log(f"✅ AuraOps completed MR !{ctx['mr_iid']} in {elapsed}s — {decision}")
+        _last_ctx = ctx  # Store for rescan/diffs API
         broadcast({"type": "pipeline_complete", "mr_iid": ctx['mr_iid'], "decision": decision,
                     "elapsed": elapsed, "confidence": ctx['risk_result'].get('confidence', 0)})
 

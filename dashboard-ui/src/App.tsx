@@ -116,6 +116,55 @@ function HistoryWindow() {
   );
 }
 
+function DiffsPanel({ onClose }: { onClose: () => void }) {
+  const [diffs, setDiffs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/diffs')
+      .then(r => r.json())
+      .then(d => { setDiffs(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 backdrop-blur-sm pointer-events-auto">
+      <div className="bg-slate-900 border border-white/20 p-5 rounded-2xl w-[95%] max-w-2xl max-h-[80vh] flex flex-col gap-3 shadow-[0_0_50px_rgba(139,92,246,0.2)] overflow-hidden">
+        <div className="flex justify-between items-center">
+          <h2 className="text-white font-bold tracking-[2px] uppercase text-sm">🔬 Code Diffs — Before / After</h2>
+          <button onClick={onClose} className="text-white/50 hover:text-white text-lg">✕</button>
+        </div>
+        <div className="overflow-y-auto flex flex-col gap-3 pr-1">
+          {loading && <p className="text-slate-400 text-sm">Loading diffs...</p>}
+          {!loading && diffs.length === 0 && <p className="text-slate-400 text-sm">No diffs available. Run an analysis first.</p>}
+          {diffs.map((d, i) => (
+            <div key={i} className="bg-black/40 rounded-lg border border-white/10 p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                  d.patched ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                }`}>{d.patched ? 'PATCHED' : 'UNPATCHED'}</span>
+                <span className="text-cyan-400 text-[11px] font-mono">{d.file}:{d.line}</span>
+                <span className="text-slate-500 text-[10px]"> • {d.type} (sev: {d.severity})</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="text-[9px] text-rose-400 font-bold uppercase tracking-widest">Before</span>
+                  <pre className="mt-1 text-[11px] text-rose-300/80 bg-rose-950/30 rounded p-2 overflow-x-auto border border-rose-500/10 whitespace-pre-wrap">{d.original_code}</pre>
+                </div>
+                <div>
+                  <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest">After</span>
+                  <pre className="mt-1 text-[11px] text-emerald-300/80 bg-emerald-950/30 rounded p-2 overflow-x-auto border border-emerald-500/10 whitespace-pre-wrap">{d.patched_code}</pre>
+                </div>
+              </div>
+              <p className="text-[10px] text-slate-500 mt-1.5">{d.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TriggerModal({ onClose, mriid, setMriid, projectId, setProjectId }: any) {
   const [loading, setLoading] = useState(false);
 
@@ -177,6 +226,8 @@ export default function App() {
   const [tourIndex, setTourIndex] = useState(0);
   const [nodes, setNodes] = useState<NodeDef[]>(INITIAL_NODES);
   const [showTriggerModal, setShowTriggerModal] = useState(false);
+  const [showDiffs, setShowDiffs] = useState(false);
+  const [rescanning, setRescanning] = useState(false);
   const [mriid, setMriid] = useState('42');
   const [projectId, setProjectId] = useState('omshukla24/AuraOps');
   const [scorecardData, setScorecardData] = useState<any>(null);
@@ -294,6 +345,23 @@ export default function App() {
         >
           + Manual Trigger
         </button>
+        <button 
+          onClick={async () => {
+            setRescanning(true);
+            try { await fetch('/api/rescan', { method: 'POST' }); } catch {}
+            setTimeout(() => setRescanning(false), 2000);
+          }}
+          disabled={rescanning}
+          className="pointer-events-auto mt-2 px-4 py-1.5 bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-500/50 rounded-full text-cyan-200 text-[10px] uppercase font-bold tracking-[2px] transition-all disabled:opacity-50"
+        >
+          {rescanning ? '↻ Rescanning...' : '↻ Rescan'}
+        </button>
+        <button 
+          onClick={() => setShowDiffs(true)}
+          className="pointer-events-auto mt-2 px-4 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/50 rounded-full text-emerald-200 text-[10px] uppercase font-bold tracking-[2px] transition-all"
+        >
+          🔬 View Diffs
+        </button>
       </div>
 
       {showTriggerModal && (
@@ -303,6 +371,8 @@ export default function App() {
           projectId={projectId} setProjectId={setProjectId}
         />
       )}
+
+      {showDiffs && <DiffsPanel onClose={() => setShowDiffs(false)} />}
 
       <HistoryWindow />
 

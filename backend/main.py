@@ -201,6 +201,40 @@ async def api_impact():
     }
 
 
+@app.post("/api/rescan", response_class=JSONResponse)
+async def api_rescan(background_tasks: BackgroundTasks):
+    """Re-trigger the last analysis pipeline. Uses the stored last payload."""
+    from backend.orchestrator import _last_payload
+    if not _last_payload:
+        return JSONResponse({"status": "error", "message": "No previous scan to rescan. Run a trigger first."}, status_code=400)
+    background_tasks.add_task(run_all_agents, _last_payload)
+    log("🔄 Rescan triggered via /api/rescan")
+    return {"status": "accepted", "message": "Rescan triggered with previous parameters"}
+
+
+@app.get("/api/diffs", response_class=JSONResponse)
+async def api_diffs():
+    """Return before/after code diffs from the last security scan."""
+    from backend.orchestrator import _last_ctx
+    if not _last_ctx or "sec_result" not in _last_ctx:
+        return []
+    vulns = _last_ctx["sec_result"].get("vulns", [])
+    diffs = []
+    for v in vulns:
+        if v.get("original_code") and v.get("patched_code"):
+            diffs.append({
+                "file": v.get("file", "unknown"),
+                "line": v.get("line", 0),
+                "type": v.get("type", "Unknown"),
+                "severity": v.get("severity", 0),
+                "patched": v.get("patched", False),
+                "original_code": v.get("original_code", ""),
+                "patched_code": v.get("patched_code", ""),
+                "description": v.get("description", ""),
+            })
+    return diffs
+
+
 # ─────────────────────────────────────────────────────────────────────
 # ENTRYPOINT
 # ─────────────────────────────────────────────────────────────────────
