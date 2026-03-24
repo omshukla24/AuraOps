@@ -165,36 +165,12 @@ function DiffsPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
-function TriggerModal({ onClose, mriid, setMriid, projectId, setProjectId, sourceBranch, setSourceBranch, onRun }: any) {
-  const [loading, setLoading] = useState(false);
-
-  const handleRun = async () => {
-    setLoading(true);
-    try {
-      // Reset animation state BEFORE firing trigger so SSE events drive it
-      if (onRun) onRun();
-
-      await fetch('/api/trigger', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project_id: projectId || '80516674',
-          mr_iid: parseInt(mriid) || 2,
-          source_branch: sourceBranch || 'main',
-          target_branch: 'main'
-        })
-      });
-      onClose();
-    } catch (e) {
-      console.error(e);
-    }
-    setLoading(false);
-  };
-
+function TriggerModal({ onClose, mriid, setMriid, projectId, setProjectId, sourceBranch, setSourceBranch }: any) {
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 backdrop-blur-sm pointer-events-auto">
       <div className="bg-slate-900 border border-white/20 p-6 rounded-2xl w-[90%] max-w-sm flex flex-col gap-4 shadow-[0_0_50px_rgba(139,92,246,0.2)]">
-        <h2 className="text-white font-bold tracking-[2px] uppercase text-sm">Manual Analysis</h2>
+        <h2 className="text-white font-bold tracking-[2px] uppercase text-sm">Pipeline Config</h2>
+        <p className="text-[10px] text-white/40 font-mono">Set the target project, MR, and branch. Click ▶ Run Pipeline to trigger.</p>
         <div className="flex flex-col gap-2">
           <label className="text-[10px] text-cyan-400 font-mono tracking-widest uppercase">Project ID</label>
           <input 
@@ -227,8 +203,8 @@ function TriggerModal({ onClose, mriid, setMriid, projectId, setProjectId, sourc
         </div>
         <div className="flex gap-3 mt-2">
           <button onClick={onClose} className="flex-1 py-2 text-white/50 hover:bg-white/5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-colors">Cancel</button>
-          <button onClick={handleRun} disabled={loading} className="flex-1 py-2 bg-cyan-500 hover:bg-cyan-400 text-black text-[11px] font-bold uppercase tracking-widest rounded-lg transition-colors">
-            {loading ? '⏳ Running...' : '▶ Run Pipeline'}
+          <button onClick={onClose} className="flex-1 py-2 bg-cyan-500 hover:bg-cyan-400 text-black text-[11px] font-bold uppercase tracking-widest rounded-lg transition-colors">
+            ✓ Save Config
           </button>
         </div>
       </div>
@@ -701,18 +677,34 @@ export default function App() {
           onClick={() => setShowTriggerModal(true)}
           className="pointer-events-auto px-5 py-2 bg-violet-600/20 hover:bg-violet-600/40 border border-violet-500/50 rounded-full text-violet-200 text-[11px] uppercase font-bold tracking-[2px] transition-all hover:scale-105 shadow-[0_0_15px_rgba(139,92,246,0.15)]"
         >
-          + Manual Trigger
+          ⚙ Configure
         </button>
         <button 
           onClick={async () => {
             setRescanning(true);
-            try { await fetch('/api/rescan', { method: 'POST' }); } catch {}
-            setTimeout(() => setRescanning(false), 2000);
+            // Reset animation state
+            setTourIndex(0);
+            setNodes(INITIAL_NODES);
+            setCompletedAgents(new Set());
+            setScorecardData(null);
+            try {
+              await fetch('/api/trigger', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  project_id: projectId || '80516674',
+                  mr_iid: parseInt(mriid) || 2,
+                  source_branch: sourceBranch || 'main',
+                  target_branch: 'main'
+                })
+              });
+            } catch {}
+            setTimeout(() => setRescanning(false), 3000);
           }}
           disabled={rescanning}
-          className="pointer-events-auto px-5 py-2 bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-500/50 rounded-full text-cyan-200 text-[11px] uppercase font-bold tracking-[2px] transition-all disabled:opacity-50 hover:scale-105 shadow-[0_0_15px_rgba(6,182,212,0.15)]"
+          className="pointer-events-auto px-5 py-2 bg-cyan-500/30 hover:bg-cyan-500/50 border border-cyan-400/60 rounded-full text-cyan-100 text-[11px] uppercase font-bold tracking-[2px] transition-all disabled:opacity-50 hover:scale-105 shadow-[0_0_20px_rgba(6,182,212,0.25)]"
         >
-          {rescanning ? '↻ Rescanning...' : '↻ Rescan'}
+          {rescanning ? '⏳ Running...' : '▶ Run Pipeline'}
         </button>
         <button 
           onClick={() => setShowDiffs(true)}
@@ -728,13 +720,6 @@ export default function App() {
           mriid={mriid} setMriid={setMriid}
           projectId={projectId} setProjectId={setProjectId}
           sourceBranch={sourceBranch} setSourceBranch={setSourceBranch}
-          onRun={() => {
-            // Reset animation state so SSE events drive it from step 0
-            setTourIndex(0);
-            setNodes(INITIAL_NODES);
-            setCompletedAgents(new Set());
-            setScorecardData(null);
-          }}
         />
       )}
 
