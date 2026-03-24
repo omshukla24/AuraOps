@@ -100,39 +100,161 @@ def empty_result() -> dict:
             "time_saved_min": 0, "regression_tests": 0, "agent_time": 0}
 
 
+# ─────────────────────────────────────────────────────────────────────
+# REGEX-BASED STATIC SCANNER (runs even when Gemini fails)
+# ─────────────────────────────────────────────────────────────────────
+
+STATIC_PATTERNS = [
+    # Hardcoded secrets
+    (r'(?:AWS_ACCESS_KEY_ID|aws_access_key_id)\s*=\s*["\']?(AKIA[0-9A-Z]{16})', "Hardcoded AWS Credentials", 9,
+     "AWS Access Key hardcoded in source", "Move to environment variable using os.getenv()"),
+    (r'(?:AWS_SECRET_ACCESS_KEY|aws_secret_access_key)\s*=\s*["\']([^"\']{20,})', "Hardcoded AWS Credentials", 9,
+     "AWS Secret Key hardcoded in source", "Move to environment variable using os.getenv()"),
+    (r'(?:STRIPE_API_KEY|stripe_api_key)\s*=\s*["\']?(sk_live_[a-zA-Z0-9]{24,})', "Hardcoded API Key", 9,
+     "Stripe live API key hardcoded", "Move to environment variable"),
+    (r'(?:SENDGRID_API_KEY|sendgrid_api_key)\s*=\s*["\']?(SG\.[a-zA-Z0-9_.-]{20,})', "Hardcoded API Key", 9,
+     "SendGrid API key hardcoded", "Move to environment variable"),
+    (r'(?:GITHUB_TOKEN|github_token)\s*=\s*["\']?(ghp_[a-zA-Z0-9]{36})', "Hardcoded API Key", 9,
+     "GitHub personal access token hardcoded", "Move to environment variable"),
+    (r'(?:JWT_SECRET|jwt_secret)\s*=\s*["\']([^"\']{8,})', "Hardcoded Secret", 8,
+     "JWT secret hardcoded in source", "Move to environment variable"),
+    (r'DB_PASSWORD\s*=\s*["\']([^"\']{4,})', "Hardcoded Password", 9,
+     "Database password hardcoded in source", "Move to environment variable"),
+    (r'(?:TWILIO_AUTH_TOKEN|twilio_auth_token)\s*=\s*["\']([a-f0-9]{32})', "Hardcoded API Key", 9,
+     "Twilio auth token hardcoded", "Move to environment variable"),
+    (r'(?:GOOGLE_MAPS_API_KEY|google_maps_api_key)\s*=\s*["\']?(AIza[a-zA-Z0-9_-]{35})', "Hardcoded API Key", 8,
+     "Google Maps API key hardcoded", "Move to environment variable"),
+    # SQL Injection
+    (r'(?:execute|cursor\.execute)\s*\(\s*f["\'].*\{.*\}', "SQL Injection", 9,
+     "User input interpolated directly into SQL query via f-string", "Use parameterized queries"),
+    (r'(?:execute|cursor\.execute)\s*\(\s*["\'].*%s.*%\s*\(', "SQL Injection", 8,
+     "SQL query built with string formatting", "Use parameterized queries"),
+    # Command Injection
+    (r'subprocess\.(?:call|run|Popen|check_output)\s*\(.*shell\s*=\s*True', "Command Injection", 9,
+     "Subprocess call with shell=True allows command injection", "Use shell=False with argument list"),
+    # Sensitive Data Logging
+    (r'(?:logger|logging)\.\w+\(.*(?:card|cvv|password|secret|token)', "Sensitive Data Logging", 6,
+     "Sensitive data being logged (credentials/PII)", "Remove sensitive data from log statements"),
+    # Weak Crypto
+    (r'hashlib\.md5\(', "Weak Cryptography", 7,
+     "MD5 hash used — cryptographically broken", "Use hashlib.sha256() or bcrypt for passwords"),
+    # Path Traversal
+    (r'open\s*\(\s*f["\'].*\{.*\}', "Path Traversal", 7,
+     "User input used directly in file path", "Validate and sanitize file paths"),
+    # SSRF
+    (r'requests\.get\s*\(\s*(?:url|path|endpoint)', "Server-Side Request Forgery", 8,
+     "User-controlled URL passed to requests.get()", "Validate URLs against allowlist"),
+    # Dockerfile issues
+    (r'^USER\s+root', "Running as Root in Container", 8,
+     "Container runs as root user", "Use a non-root user: USER appuser"),
+    (r'^EXPOSE\s+.*(?:22|3306|5432)', "Excessive Port Exposure", 7,
+     "Sensitive ports (SSH/DB) exposed in container", "Only expose necessary application ports"),
+    (r'^ENV\s+.*(?:PASSWORD|SECRET|KEY|TOKEN)\s*=\s*["\']?[^\s"\']{4,}', "Hardcoded Secret in Dockerfile", 9,
+     "Secret hardcoded as ENV in Dockerfile", "Use Docker secrets or runtime env injection"),
+]
+
+
+def _static_regex_scan(diff: str, changed_files: list = None) -> list:
+    """Regex-based static scan that ALWAYS works, even without Gemini."""
+    issues = []
+    seen = set()  # Deduplicate
+
+    for line_num, line in enumerate(diff.split("\n"), 1):
+        # Only scan added/new lines
+        clean_line = line.lstrip("+").strip()
+        if not clean_line or clean_line.startswith("---") or clean_line.startswith("+++"):
+            continue
+
+        for pattern, vuln_type, severity, description, fix in STATIC_PATTERNS:
+            if re.search(pattern, clean_line, re.IGNORECASE):
+                # Determine file from nearest diff header
+                file_path = "unknown"
+                for prev_line in diff[:diff.index(line) if line in diff else 0].split("\n"):
+                    if prev_line.startswith("+++ b/"):
+                        file_path = prev_line[6:]
+
+                dedup_key = f"{vuln_type}:{file_path}:{clean_line[:50]}"
+                if dedup_key not in seen:
+                    seen.add(dedup_key)
+                    issues.append({
+                        "type": vuln_type,
+                        "severity": severity,
+                        "file": file_path,
+                        "line": line_num,
+                        "description": description,
+                        "fix": fix,
+                        "original_code": clean_line,
+                        "patched_code": "",  # Will be filled by Gemini 2nd pass or left for manual fix
+                    })
+
+    return issues
+
+
 async def run(ctx: dict) -> dict:
     """
     SecurityAgent: Two parallel Claude calls (OWASP vulns + secrets scan),
-    then auto-patch each vulnerability with a real commit,
-    verify patches, generate regression guard tests, and scan dependencies.
+    plus regex-based static scan fallback.
+    Then auto-patch each vulnerability with a real commit.
     """
+    print("[SecurityAgent] Starting analysis", flush=True)
     log("🔐 SecurityAgent: Starting analysis")
     broadcast("🔐 SecurityAgent: Scanning for vulnerabilities...")
     agent_start = time.time()
     diff = (ctx.get("diff") or "")[:30000]
 
-    if not diff or not gemini_model:
-        log("🔐 SecurityAgent: No diff or no Gemini API key — skipping")
+    if not diff:
+        print("[SecurityAgent] No diff available — skipping", flush=True)
+        log("🔐 SecurityAgent: No diff — skipping")
         return empty_result()
 
+    print(f"[SecurityAgent] Diff length: {len(diff)} chars, gemini_model: {gemini_model is not None}", flush=True)
+
     try:
-        # Run both scans in parallel
-        vuln_task = asyncio.to_thread(_claude_scan, VULN_SCAN_PROMPT, diff)
-        secrets_task = asyncio.to_thread(_claude_scan, SECRETS_SCAN_PROMPT, diff)
-        vuln_results, secrets_results = await asyncio.gather(
-            vuln_task, secrets_task, return_exceptions=True
-        )
-
-        # Merge results
         all_issues = []
-        if isinstance(vuln_results, list):
-            all_issues.extend(vuln_results)
-        if isinstance(secrets_results, list):
-            all_issues.extend(secrets_results)
 
-        # Dependency CVE scanning
+        # 1) Always run regex static scan (guaranteed to work)
+        static_issues = _static_regex_scan(diff, ctx.get("changed_files"))
+        print(f"[SecurityAgent] Static regex scan found {len(static_issues)} issues", flush=True)
+        all_issues.extend(static_issues)
+
+        # 2) Run Gemini AI scan if available (may find additional issues)
+        if gemini_model:
+            try:
+                vuln_task = asyncio.to_thread(_claude_scan, VULN_SCAN_PROMPT, diff)
+                secrets_task = asyncio.to_thread(_claude_scan, SECRETS_SCAN_PROMPT, diff)
+                vuln_results, secrets_results = await asyncio.gather(
+                    vuln_task, secrets_task, return_exceptions=True
+                )
+                if isinstance(vuln_results, list):
+                    print(f"[SecurityAgent] Gemini vuln scan found {len(vuln_results)} issues", flush=True)
+                    all_issues.extend(vuln_results)
+                else:
+                    print(f"[SecurityAgent] Gemini vuln scan failed: {vuln_results}", flush=True)
+                if isinstance(secrets_results, list):
+                    print(f"[SecurityAgent] Gemini secrets scan found {len(secrets_results)} issues", flush=True)
+                    all_issues.extend(secrets_results)
+                else:
+                    print(f"[SecurityAgent] Gemini secrets scan failed: {secrets_results}", flush=True)
+            except Exception as e:
+                print(f"[SecurityAgent] Gemini scan exception: {e}", flush=True)
+        else:
+            print("[SecurityAgent] gemini_model is None, skipping AI scan", flush=True)
+
+        # 3) Dependency CVE scanning
         dep_issues = await _scan_dependencies(ctx)
         all_issues.extend(dep_issues)
+
+        # Deduplicate by type+file
+        seen_keys = set()
+        deduped = []
+        for issue in all_issues:
+            key = f"{issue.get('type', '')}:{issue.get('file', '')}:{issue.get('line', 0)}"
+            if key not in seen_keys:
+                seen_keys.add(key)
+                deduped.append(issue)
+        all_issues = deduped
+
+        print(f"[SecurityAgent] Total unique issues: {len(all_issues)}", flush=True)
 
         if not all_issues:
             log("🔐 SecurityAgent: No vulnerabilities found ✅")
@@ -144,6 +266,7 @@ async def run(ctx: dict) -> dict:
                     "agent_time": elapsed_sec}
 
         broadcast(f"🔐 SecurityAgent: Found {len(all_issues)} vulnerabilities — auto-patching...")
+
 
         # Auto-patch each vulnerability
         patches_committed = 0
