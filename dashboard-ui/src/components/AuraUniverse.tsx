@@ -122,7 +122,7 @@ const PIPES: PipeDef[] = [
 //  MAIN SCENE
 // ═══════════════════════════════════════
 
-export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scorecardData }: { nodes: NodeDef[], tourIndex: number, onTourIndexChange?: (i: number) => void, scorecardData?: any }) {
+export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scorecardData, completedAgents }: { nodes: NodeDef[], tourIndex: number, onTourIndexChange?: (i: number) => void, scorecardData?: any, completedAgents?: Set<string> }) {
   const [flowState, setFlowState] = useState<FlowState>('IDLE');
   const pipeProgressRef = useRef(0); // 0 to 100
   const [litNodes, setLitNodes] = useState<Set<string>>(new Set(['trigger']));
@@ -159,7 +159,33 @@ export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scor
     }
 
     if (flowState === 'DRAWING_PIPES') {
-      pipeProgressRef.current += dt * 8; // 12.5 seconds total flow time (100 / 8)
+      // SSE-driven: compute target progress from completedAgents
+      const agentProgressMap: Record<string, number> = {
+        'security': 20,
+        'greenops': 20,
+        'validation': 40,
+        'risk': 60,
+        'compliance': 80,
+        'deploy': 90,
+        'scorecard': 100,
+      };
+
+      let targetProgress = 5; // Start with a small amount to show flow began
+      if (completedAgents && completedAgents.size > 0) {
+        for (const [agent, progress] of Object.entries(agentProgressMap)) {
+          if (completedAgents.has(agent) && progress > targetProgress) {
+            targetProgress = progress;
+          }
+        }
+      }
+
+      // Smoothly approach the target progress
+      const diff = targetProgress - pipeProgressRef.current;
+      if (diff > 0.1) {
+        pipeProgressRef.current += Math.min(diff, dt * 15); // Smooth approach
+      } else {
+        pipeProgressRef.current = targetProgress;
+      }
 
       if (pipeProgressRef.current >= 100) {
         pipeProgressRef.current = 100;
@@ -172,16 +198,16 @@ export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scor
       }
       if (newLit.size !== litNodes.size) setLitNodes(newLit);
 
-      // Auto-advance tour index to sync terminal window with pipeline
+      // Auto-advance tour index based on progress
       const autoTourNodes = [
         { idx: 0, at: 0 },
-        { idx: 1, at: 15 }, // Security
-        { idx: 2, at: 23 }, // GreenOps (staggered slightly to allow user to read Security logs)
-        { idx: 3, at: 35 }, // Validation
-        { idx: 4, at: 55 }, // Risk Engine
-        { idx: 5, at: 70 }, // Compliance
-        { idx: 6, at: 85 }, // Deploy
-        { idx: 7, at: 98 }, // Scorecard
+        { idx: 1, at: 15 },
+        { idx: 2, at: 23 },
+        { idx: 3, at: 35 },
+        { idx: 4, at: 55 },
+        { idx: 5, at: 70 },
+        { idx: 6, at: 85 },
+        { idx: 7, at: 98 },
       ];
 
       let currentStage = 0;
@@ -197,57 +223,29 @@ export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scor
     }
   });
 
-  // Cinematic Fly-To Animation
+  // Camera: only do initial fly-to when pipeline starts, then let user freely control
+  const hasInitializedCamera = useRef(false);
   useEffect(() => {
-    if (cameraControlsRef.current) {
-      if (flowState === 'IDLE' || flowState === 'SHIFTING_LAYOUT' || tourIndex === 0) return;
-
-      // Once visual pipe drawing completes (or skips immediately), pan to Node index
-      let targetNode = nodes[tourIndex];
-      if (!targetNode) return;
-
-      let [tx, ty, tz] = targetNode.pos;
-      const finalX = tx;
-
+    if (cameraControlsRef.current && flowState === 'DRAWING_PIPES' && !hasInitializedCamera.current) {
+      hasInitializedCamera.current = true;
+      // Fly to a good overview position once
+      const n1 = nodes[1]?.pos || [0,0,0];
+      const n2 = nodes[2]?.pos || [0,0,0];
+      const tx = (n1[0] + n2[0]) / 2;
+      const ty = (n1[1] + n2[1]) / 2;
+      const tz = (n1[2] + n2[2]) / 2;
       const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-
-      let camY = isMobile ? ty - 6 : ty;
-      let distZ = isMobile ? tz + 25 : tz + 22; // Extended backing distance to fit larger detail boxes
-
-      // Feature: Zoom out camera to visually group the Security + GreenOps parallel split
-      if (tourIndex === 1) {
-        // Special Security/GreenOps Wide Angle View
-        // Find indices of sec/eco instead of hardcoding 1 & 2
-        // Assuming Security and GreenOps are indices 1 and 2
-        const n1 = nodes[1]?.pos || [0,0,0];
-        const n2 = nodes[2]?.pos || [0,0,0];
-        
-        tx = (n1[0] + n2[0]) / 2;
-        ty = (n1[1] + n2[1]) / 2;
-        tz = (n1[2] + n2[2]) / 2;
-        
-        camY = isMobile ? -6 : 0; // Look directly at the center of the Y-axis split
-        distZ = isMobile ? tz + 38 : tz + 32; // Massive Z pushback to fit both nodes in viewport
-      }
-
-      // Fly to node pos, looking perfectly backwards
-      cameraControlsRef.current.setLookAt(finalX, camY, distZ, finalX, camY, tz, true);
-
-      // Auto-expand branches for the currently focused tour node
-      let bubblesToExpand = [...(targetNode.branches?.map(b => b.id) || [])];
-
-      // Feature: Both parallel branches open simultaneously
-      if (tourIndex === 1) {
-        // Expand both branches so they are visible together
-        const multiNodeBubbles = [
-          ...(nodes[1]?.branches || []).map(b => b.id),
-          ...(nodes[2]?.branches || []).map(b => b.id)
-        ];
-        bubblesToExpand = multiNodeBubbles;
-      }
-      setExpandedBubbles(bubblesToExpand);
+      const distZ = isMobile ? tz + 38 : tz + 32;
+      cameraControlsRef.current.setLookAt(tx, ty, distZ, tx, ty, tz, true);
+      // Expand all branches initially
+      const allBubbles = nodes.flatMap(n => n.branches?.map(b => b.id) || []);
+      setExpandedBubbles(allBubbles);
     }
-  }, [tourIndex, flowState, nodes]);
+    // Reset on idle
+    if (flowState === 'IDLE') {
+      hasInitializedCamera.current = false;
+    }
+  }, [flowState, nodes]);
 
   const isProcessing = flowState === 'DRAWING_PIPES';
 

@@ -231,6 +231,7 @@ export default function App() {
   const [mriid, setMriid] = useState('42');
   const [projectId, setProjectId] = useState('omshukla24/AuraOps');
   const [scorecardData, setScorecardData] = useState<any>(null);
+  const [completedAgents, setCompletedAgents] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const source = new EventSource('/api/events');
@@ -243,6 +244,7 @@ export default function App() {
           
           if (payload.type === 'pipeline_start') {
             setTourIndex(1); // Jump to Security
+            setCompletedAgents(new Set()); // Reset on new pipeline
           } else if (payload.type === 'phase_start' && payload.agents && payload.agents.length > 0) {
             const agent = payload.agents[0];
             const idx = nextNodes.findIndex(n => n.id === agent);
@@ -250,9 +252,12 @@ export default function App() {
           } else if (payload.type === 'pipeline_complete') {
              setScorecardData(payload.data || {});
              setTourIndex(nextNodes.findIndex(n => n.id === 'scorecard'));
+             setCompletedAgents(prev => new Set([...prev, 'scorecard']));
           } else if (payload.type === 'agent_result') {
             const idx = nextNodes.findIndex(n => n.id === payload.agent);
             if (idx !== -1 && payload.data) {
+              // Track completed agents for animation
+              setCompletedAgents(prev => new Set([...prev, payload.agent]));
               const node = { ...nextNodes[idx] };
               if (payload.agent === 'security') {
                 node.logs = [
@@ -336,12 +341,17 @@ export default function App() {
 
   return (
     <div className="w-screen h-screen overflow-hidden relative bg-black">
+      {/* Logo — top left, bigger */}
       <div className="absolute top-4 left-4 md:top-6 md:left-6 z-10 pointer-events-none">
-        <h1 className="text-xl md:text-3xl font-bold tracking-[6px] text-white font-['Space_Grotesk','Inter',sans-serif] drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]" style={{ textShadow: '0 0 5px #06b6d4, 0 0 15px #06b6d4' }}>AURAOPS</h1>
-        <p className="text-[8px] md:text-[10px] tracking-[2px] text-cyan-300 mt-1 uppercase font-['Space_Grotesk','Inter',sans-serif] hidden sm:block drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]">Autonomous Unified Release Authority for Operations</p>
+        <h1 className="text-3xl md:text-5xl font-bold tracking-[8px] text-white font-['Space_Grotesk','Inter',sans-serif] drop-shadow-[0_0_15px_rgba(6,182,212,0.8)]" style={{ textShadow: '0 0 8px #06b6d4, 0 0 20px #06b6d4, 0 0 40px #06b6d4' }}>AURAOPS</h1>
+        <p className="text-[10px] md:text-[13px] tracking-[3px] text-cyan-300 mt-1.5 uppercase font-['Space_Grotesk','Inter',sans-serif] hidden sm:block drop-shadow-[0_0_10px_rgba(34,211,238,0.6)]">Autonomous Unified Release Authority for Operations</p>
+      </div>
+
+      {/* Action Buttons — top center, horizontal */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex gap-2 items-center">
         <button 
           onClick={() => setShowTriggerModal(true)}
-          className="pointer-events-auto mt-3 px-4 py-1.5 bg-violet-600/20 hover:bg-violet-600/40 border border-violet-500/50 rounded-full text-violet-200 text-[10px] uppercase font-bold tracking-[2px] transition-all"
+          className="pointer-events-auto px-5 py-2 bg-violet-600/20 hover:bg-violet-600/40 border border-violet-500/50 rounded-full text-violet-200 text-[11px] uppercase font-bold tracking-[2px] transition-all hover:scale-105 shadow-[0_0_15px_rgba(139,92,246,0.15)]"
         >
           + Manual Trigger
         </button>
@@ -352,13 +362,13 @@ export default function App() {
             setTimeout(() => setRescanning(false), 2000);
           }}
           disabled={rescanning}
-          className="pointer-events-auto mt-2 px-4 py-1.5 bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-500/50 rounded-full text-cyan-200 text-[10px] uppercase font-bold tracking-[2px] transition-all disabled:opacity-50"
+          className="pointer-events-auto px-5 py-2 bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-500/50 rounded-full text-cyan-200 text-[11px] uppercase font-bold tracking-[2px] transition-all disabled:opacity-50 hover:scale-105 shadow-[0_0_15px_rgba(6,182,212,0.15)]"
         >
           {rescanning ? '↻ Rescanning...' : '↻ Rescan'}
         </button>
         <button 
           onClick={() => setShowDiffs(true)}
-          className="pointer-events-auto mt-2 px-4 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/50 rounded-full text-emerald-200 text-[10px] uppercase font-bold tracking-[2px] transition-all"
+          className="pointer-events-auto px-5 py-2 bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/50 rounded-full text-emerald-200 text-[11px] uppercase font-bold tracking-[2px] transition-all hover:scale-105 shadow-[0_0_15px_rgba(16,185,129,0.15)]"
         >
           🔬 View Diffs
         </button>
@@ -377,7 +387,7 @@ export default function App() {
       <HistoryWindow />
 
       <Canvas camera={{ position: [0, 0, 30], fov: 45 }} gl={{ antialias: true }}>
-        <AuraUniverse nodes={nodes} tourIndex={tourIndex} onTourIndexChange={setTourIndex} scorecardData={scorecardData} />
+        <AuraUniverse nodes={nodes} tourIndex={tourIndex} onTourIndexChange={setTourIndex} scorecardData={scorecardData} completedAgents={completedAgents} />
       </Canvas>
 
       {/* Detailed Process Window Overlay Escaping 3D Projection */}
