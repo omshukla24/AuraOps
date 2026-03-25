@@ -125,6 +125,7 @@ const PIPES: PipeDef[] = [
 export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scorecardData, completedAgents, onPipelineTrigger, resetTrigger }: { nodes: NodeDef[], tourIndex: number, onTourIndexChange?: (i: number) => void, scorecardData?: any, completedAgents?: Set<string>, onPipelineTrigger?: () => void, resetTrigger?: number }) {
   const [flowState, setFlowState] = useState<FlowState>('IDLE');
   const pipeProgressRef = useRef(0); // 0 to 100
+  const maxAutoStageRef = useRef(0); // Tracks highest auto-advanced stage
   const [litNodes, setLitNodes] = useState<Set<string>>(new Set(['trigger']));
   const [expandedBubbles, setExpandedBubbles] = useState<string[]>([]);
 
@@ -136,6 +137,7 @@ export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scor
   const startFlow = useCallback(() => {
     // Reset pipe progress but light up ALL nodes immediately
     pipeProgressRef.current = 0;
+    maxAutoStageRef.current = 0;
     // Show all nodes right away so the full pipeline structure is visible
     setLitNodes(new Set(nodes.map(n => n.id)));
     setExpandedBubbles([]);
@@ -238,9 +240,13 @@ export default function AuraUniverse({ nodes, tourIndex, onTourIndexChange, scor
           break;
         }
       }
-      // Only auto-advance forward, never override manual backward navigation
+      
+      // Only auto-advance forward for new stages, never continuously override manual backward navigation
       if (currentStage > tourIndex && onTourIndexChange) {
-        onTourIndexChange(currentStage);
+        if (!maxAutoStageRef.current || currentStage > maxAutoStageRef.current) {
+          maxAutoStageRef.current = currentStage;
+          onTourIndexChange(currentStage);
+        }
       }
     }
   });
